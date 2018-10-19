@@ -418,6 +418,11 @@ is a literate =emacs lisp= file, written in =org-mode=.
   elisp files. Instead I grab them all manually from init.el, which
   also allows me to byte-compile them on demand.
 
+* TODO Remove the additional loading code
+
+  As stated in the sibling todo, I no longer load anything this
+  way. Should be deleted.
+
 * Changelog
 
   This is a local record of changes made to this file. May be inaccurate. I'm only human.

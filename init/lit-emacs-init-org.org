@@ -1,0 +1,155 @@
+#+TITLE: Org Setup
+#+Author: Nils Gustafsson
+#+OPTIONS: num:3 toc:nil
+
+This file responsible for initialising my personal ~org~ stup, as part
+of my [[file:init.org][init.org]] file. This is a literate =emacs lisp= file, written in
+=org-mode=.
+
+
+* Org
+
+  WRITTEN: [2018-10-18 tor 13:16]
+
+  There's little to do here, besides importing org just to define some
+  symbols. The one extra package I really want is a look and feel
+  thing called =org-bullets=.
+
+  #+NAME: lit-emacs-init-org-bullets-setup
+  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+    ;; I'm doing this exclusively to stop the byte-compiler from
+    ;; complaining about missing symbols. Org is already loaded (lazily)
+    ;; by the time we get to this stage of the initialisation, since
+    ;; that's introduced in init.el itself.
+    (use-package org
+      :defer t
+      :defines (org-agenda-mode-map)
+      :functions (org-agenda-show))
+
+    ;; So I won't have to keep staring at rows of asterisks.  Plus it
+    ;; makes deeply nested trees (slightly) easier to deal with.
+    (use-package org-bullets
+      :defer t
+      :commands org-bullets-mode
+      :after org
+      :hook (org-mode . (lambda () (org-bullets-mode 1))))
+
+  #+END_SRC
+
+
+
+  
+** Functions
+
+   WRITTEN: [2018-10-17 ons 19:00]
+
+   There are a couple of functions that need defining here, mainly for
+   =org-agenda= use.
+
+   - My agenda setup
+     
+     Firstly, I need a pair of helpers, [[(delBeforeShow)][one]] to clear the frame before
+     opening the agenda, and [[(indirectHack)][one]] to give me a key binding for closing
+     indirect buffers opened via an agenda view.
+
+     #+NAME: lit-emacs-init-agenda-split-helpers-def
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+       ;; Helper function for nilgu/agenda-split-settings, defined further
+       ;; down. Clears the frame of other buffers/windows before opening the
+       ;; agenda in the current one.
+       (defun nilgu/agenda-del-before-show (&optional fe)             ;(delBeforeShow)
+         "Like 'agenda-mode-show' but delete other buffers first."
+         (interactive)
+         (delete-other-windows)
+         (org-agenda-show fe))
+
+       ;; Tiny function to help close an indirect buffer opened from an
+       ;; agenda buffer. Used in nilgu/agenda-split-settings below.
+       (defun nilgu/agenda-del-indirect-hack ()                        ;(indirectHack)
+         "Delete the window below, if it exists."
+         (interactive)
+         (when (with-demoted-errors "No valid buffer below! (Exact error: %s)"
+                 (windmove-down))
+           (delete-window)))
+
+     #+END_SRC
+
+     Armed with those, I can define my custom ~agenda-show~ settings
+     hook:
+
+     #+NAME: lig-emacs-init-agenda-agenda-split-settings-def
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" 
+
+       ;; Adjust some agenda settings on the fly, when the mode is loaded.
+       (defun nilgu/agenda-split-settings ()
+         "Set buffer-local split thresholds in agenda mode.
+       Specifically: set 'split-height-threshold' to nil and
+       'split-width-threshold' to 5.  Also redefines the goto key and
+       switch to key."
+         (interactive)
+         (setq-local split-height-threshold nil)
+         (setq-local split-width-threshold 5)
+         (mapc (lambda (p)
+                (define-key org-agenda-mode-map (kbd (car p)) (cdr p)))
+               '(("RET"          . nilgu/agenda-del-before-show)
+                 ("<return>"     . nilgu/agenda-del-before-show)
+                 ("C-RET"        . org-agenda-goto)
+                 ("<C-return>"   . org-agenda-goto)
+                 ("C-M-RET"      . org-agenda-switch-to)
+                 ("<C-M-return>" . org-agenda-switch-to)
+                 ("<tab>"        . org-agenda-tree-to-indirect-buffer)
+                 ("<backtab>"    . nilgu/agenda-del-indirect-hack))))
+
+       ;; Add the above to the agenda-mode-hook.
+       (add-hook 'org-agenda-mode-hook 'nilgu/agenda-split-settings)
+
+     #+END_SRC
+     
+
+   - Agenda view opening functions
+
+     Some functions which mimic the agenda key bindings connected to
+     two agenda views I make frequent use of.
+
+     #+NAME: lit-emacs-init-agenda-view-open-functions-def
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+       ;; Open the views in question
+
+       (defun nilgu/org-agenda-custom-view-general (&optional arg)
+         "Show the ;; view, passing along optional ARG."
+         (interactive "P")
+         (org-agenda arg ";;"))
+
+       (defun nilgu/org-agenda-custom-view-work (&optional arg)
+         "Show the ;W view, passing along optional ARG."
+         (interactive "P")
+         (org-agenda arg ";W"))
+
+
+       ;; Open and bury
+
+       (defun nilgu/org-agenda-custom-view-general-and-bury (&optional arg)
+         "Show the ;; view, passing along optional ARG, then bury the buffer."
+         (interactive "P")
+         (org-agenda arg ";;")
+         (bury-buffer))
+
+
+       (defun nilgu/org-agenda-custom-view-work-and-bury (&optional arg)
+         "Show the ;W view, passing along optional ARG, then bury the buffer."
+         (interactive "P")
+         (org-agenda arg ";W")
+         (bury-buffer))
+
+
+       ;; Register hooks
+
+       ;(add-hook 'after-init-hook 'nilgu/org-agenda-custom-view-general-and-bury)
+       ;(add-hook 'after-init-hook 'nilgu/org-agenda-custom-view-work-and-bury)
+
+     #+END_SRC
+
+
+    

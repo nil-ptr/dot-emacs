@@ -1,0 +1,120 @@
+#+TITLE: Linum Setup
+#+Author: Nils Gustafsson
+#+OPTIONS: num:3 toc:nil
+
+This is the file responsible for setting up ~linum-mode~ correctly, as
+part of my [[file:init.org][init.org]] file. This is a literate =emacs lisp= file,
+written in =org-mode=.
+
+
+* Linum
+
+  Line numbering minor mode. See the relevant emacs documentation for details.
+
+** The Problem
+
+   WRITTEN: [2018-10-17 ons 12:47]
+
+   I'd like to use ~global-linum-mode~, but it interacts badly with a
+   number of different other modes and buffers:
+
+   - Interactive buffers, such as repl buffers and compilation buffers
+     may end up becoming exceedingly long. This eventually causes
+     =linum= to start to consume unacceptable amounts of system
+     resources.
+
+   - Certain other "starred" buffers such as =*Messages*= also exhibit
+     this problem.
+
+   - =linum= combined with =pdf-view-mode= exhibits similar problems,
+     albeit for different reasons. I forget what those reasons are
+     exactly; it's been a while since I looked this up. In any case
+     trying to add line numbers to a pdf buffer is a) useless, and b)
+     causes *massive* slowdowns.
+
+   And in addition, there are a few modes where it behaves just fine,
+   but where I'd like it turned off anyway.
+
+   Sadly there is no built in way to blacklist or exclude certain
+   modes from being affected by ~global-linum-mode~. And I don't want
+   to have to whitelist every single mode that /does/ work with
+   ~global-linum-mode~. Which is also not a thing that's supported in
+   the =linum= customize category.
+
+** The Solution
+
+   WRITTEN: [2018-10-17 ons 12:51]
+
+   Since neither whitelisting, nor blacklisting is avaliable directly,
+   we'll have implement this functionality manually. The code here is
+   based in part on code I found at a now long since dissappeared url[fn:deadlink].
+
+   The idea here is to add the missing customization interface
+   manually during init, and to then *redefine* a function called
+   [[(redef_linum_on)][~linum-on~]], /after/ calling ~global-linum-mode~. This second part
+   seems to work most reliably, when preformed as part of ~:config~.
+
+   #+NAME: lit-emacs-init-linum-defcustoms
+   #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)"
+     (use-package linum
+       :defer t
+       :commands (global-linum-mode linum-on)
+       ;; Redefine linum-on to respect our new custom
+       ;; variables.
+       :config
+       (progn
+         (message "%s %s"
+                  "from lit-emacs-init-linum:"
+                  "overriding definition of 'linum-on'...")
+         (defun linum-on ()            ;(redef_linum_on)
+           "Activate line-numbers in the current buffer, unless this
+     is ruled out by `global-linum-disabled-modes-list'
+     `global-linum-ignore-starred-buffers'.
+
+     This function overrides the default definition exported in
+     linum.el"
+
+           (unless (or (minibufferp)
+                       (member major-mode global-linum-disabled-modes-list)
+                       (and global-linum-ignore-starred-buffers
+                            (string-match "*" (buffer-name))
+                            ))
+             (linum-mode 1))))
+       :init (progn
+               ;; Define some customizable variables.
+               (defcustom global-linum-disabled-modes-list 
+                 '(eshell-mode
+                   wl-summary-mode
+                   compilation-mode
+                   org-mode
+                   text-mode
+                   dired-mode
+                   doc-view-mode
+                   pdf-view-mode
+                   haskell-interactive-mode)
+                 "List of major modes where `global-linum-mode' shouldn't apply."
+                 :type '(repeat (sexp :tag "Major mode"))
+                 :tag "Global Linum Mode Major Mode Blacklist"
+                 :group 'linum)
+
+               (defcustom global-linum-ignore-starred-buffers 't
+                 "If non-nil, `global-linum-mode' will ignore starred buffers such as *Gnu Emacs*."
+                 :type 'boolean
+                 :tag "Global Linum Mode Ignore Starred Buffers"
+                 :group 'linum))
+       ;:hook (after-init . (lambda () (global-linum-mode 1)))
+       )
+
+   #+END_SRC
+
+
+   And that's that. Not too hard to fix, thankfully.
+
+
+[fn:deadlink] The (now dead) link is:
+=https://github.com/Khady/emacs.d/blob/master/setup-linum.el=
+
+
+* Changelog
+
+  This is a local record of changes made to this file. May be inaccurate. I'm only human.

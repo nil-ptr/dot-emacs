@@ -1,0 +1,8 @@
+# key: ccd
+# name: comment column d
+# expand-env: ((yas-indent-line (quote fixed)) (yas-wrap-around-region (quote nil)))
+# --
+
+--- $1 ${1:$(make-string (- 65 (string-width yas-text)) ?\-)}
+
+$0

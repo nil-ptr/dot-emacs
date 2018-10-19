@@ -1,0 +1,76 @@
+# -*- mode: gitignore; -*-
+
+### gitignore.io autogen'd ###
+
+### Emacs ###
+
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive 
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# reftex files
+*.rel
+
+# AUCTeX auto folder
+/auto/
+
+# cask packages
+.cask/
+dist/
+
+# Flycheck
+flycheck_*.el
+
+# server auth directory
+/server/
+
+# projectiles files
+.projectile
+
+# directory configuration
+.dir-locals.el
+
+
+### Elisp ###
+# Compiled
+*.elc
+
+# Packaging
+.cask
+
+# Backup files
+*~
+
+# Undo-tree save-files
+*.~undo-tree
+
+### Manual exclusion ###
+
+# These are only locally meaningful
+bookmarks
+projectile*
+
+# Autogen'd; I don't want it
+request/
+
+### Important! ###
+
+# The .el files of this form are autogen'd, and should not be saved.
+init/lit-emacs-init-*.el

@@ -1,0 +1,428 @@
+#+TITLE: Main Emacs Initialisation File
+#+Author: Nils Gustafsson
+#+OPTIONS: num:3 toc:nil
+
+This is the main initialisation file, to be loaded from ~init.el~. This
+is a literate =emacs lisp= file, written in =org-mode=.
+
+
+* Initialisation
+
+  Three things need doing here:
+
+  1. Define some basic helper functions, that we'll need.
+  2. Set up bindings, hooks and variables.
+  3. Load the other init org files.
+
+
+  Also, a quick note: most packages here are in scope by virtue of
+  having been loaded by =cask=. Thus a lot of functionality in this
+  file, and it's siblings, is used without ever being explicitly
+  loaded/required. My apologies if this causes confusion.
+
+** Functions
+   :PROPERTIES:
+   :ID:       1ac0a0d7-d506-4660-a7b7-b68bcba1a746
+   :END:
+
+   WRITTEN: [2018-10-17 ons 10:29]
+
+
+   - ~lit-emacs-init-load~
+
+     We need a function to load other =*.org= files as though they
+     were =elisp= files. This is achieved using a function I found in
+     the [[https://github.com/eschulte/emacs24-starter-kit/blob/master/starter-kit.org#starter-kit-basics][echulte/emacs24-starter-kit]] on github. The only real
+     difference is that I've replaced "starter-kit" by
+     "lit-emacs-init".
+   
+     #+name: lit-emacs-init-load
+     #+begin_src emacs-lisp -n 1 :tangle no
+       (defun lit-emacs-init-load (file &optional header-or-tag)
+         "Load configuration from other lit-emacs-init-*.org files.
+       If the optional argument is the id of a subtree then only
+       configuration from within that subtree will be loaded.  If it is
+       not an id then it will be interpreted as a tag, and only subtrees
+       marked with the given tag will be loaded.
+
+       For example, to load all of lit-emacs-init-lisp.org simply
+       add (lit-emacs-init-load \"lisp\") to your configuration.
+
+       To load only the 'window-system' config from
+       lit-emacs-init-misc-recommended.org add
+        (lit-emacs-init-load \"misc-recommended\" \"window-system\")
+       to your configuration."
+         (let ((file (expand-file-name (if (string-match "lit-emacs-init-.+\.org" file)
+                                           file
+                                         (format "lit-emacs-init-%s.org" file))
+                                       lit-emacs-init-dir)))
+           (org-babel-load-file
+            (if header-or-tag
+                (let* ((base (file-name-nondirectory file))
+                       (dir  (file-name-directory file))
+                       (partial-file (expand-file-name
+                                      (concat "." (file-name-sans-extension base)
+                                              ".part." header-or-tag ".org")
+                                      dir)))
+                  (unless (file-exists-p partial-file)
+                    (with-temp-file partial-file
+                      (insert
+                       (with-temp-buffer
+                         (insert-file-contents file)
+                         (save-excursion
+                           (condition-case nil ;; collect as a header
+                               (progn
+                                 (org-link-search (concat"#"header-or-tag))
+                                 (org-narrow-to-subtree)
+                                 (buffer-string))
+                             (error ;; collect all entries with as tags
+                              (let (body)
+                                (org-map-entries
+                                 (lambda ()
+                                   (save-restriction
+                                     (org-narrow-to-subtree)
+                                     (setq body (concat body "\n" (buffer-string)))))
+                                 header-or-tag)
+                                body))))))))
+                  partial-file)
+              file))))
+     #+end_src
+     
+
+   - ~nilgu/split-win~
+
+     A very simple window splitting function. Should be in a
+     =lit-emacs-misc-defuns.org=, but it's the only misc function I
+     currently have in here, so I'm disinclined to put it in it's own
+     file.
+
+     #+NAME: lit-emacs-nilgu/split-win
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+       (defun nilgu/split-win ()                                 ;(defNilguSplitwin)
+         "Splits the current window until this frame has 3 and then balances them."
+         (interactive)
+         (let ((num (- 3 (count-windows))))
+           (when (> num 0)
+             (dotimes (i num) (split-window-right nil))
+             (balance-windows)
+             )
+           )
+         )
+     #+END_SRC
+
+** Setup
+
+   WRITTEN: [2018-10-17 ons 10:44]
+
+   And so, we're ready to begin. Two vague classes of functionality
+   need to be set up here: 
+
+   1. Functionality that can be set up "inline", as it were, because
+      it's just a line or two long.
+   2. Functionality that is defined in it's own =lit-emacs-*.org=
+      file, because it involves some potentially non-trivial code. Or
+      because including it in this file would add unnecessary visual
+      clutter.
+
+   Most of the nodes here belong to the former class.
+
+   - A note on keybindings
+
+     The "H" used in =kbd= macros below is the /Hyper/ modifier key. I
+     frequently remap capslock (using =xmodmap=) to work as a Hyper
+     key, since I've no real use for the capslock key otherwise.
+
+
+*** Basic Functionality
+
+    WRITTEN: [2018-10-17 ons 11:02]
+    
+    Some basic packages that don't special setup scripts.
+
+    - Keyboard layout fix. 
+
+      This is needed in some environments, in order for my non-english
+      keyboard layout to work properly. And in environments where it's
+      not needed, it's still (to my knowledge) harmless.
+
+      #+NAME: lit-emacs-init-iso-keyboard
+      #+BEGIN_SRC emacs-lisp +n
+      (require 'iso-transl)
+      #+END_SRC
+
+    - =pdf-tools=
+
+      Note that when this package is updated, the pdf-tools backends
+      will need to be rebuilt. This rebuilding process will cause a
+      prompt to appear in emacs, which means it may be unwise to start
+      emacs as a daemon immediately after updating that package. Since
+      you might not see the prompt.
+      
+      #+NAME: lit-emacs-init-pdf-tools
+      #+BEGIN_SRC emacs-lisp +n
+        (use-package pdf-tools
+          :config (pdf-tools-install))
+      #+END_SRC
+
+    - =powerline= and =encourage=
+      
+      A pair of straight forward ui packages.
+
+      #+NAME: lit-emacs-init-powerline-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package powerline
+          :config (powerline-default-theme))
+        (use-package encourage-mode
+          :diminish)
+      #+END_SRC
+      
+    - =pandoc-mode=
+
+      #+NAME: lit-emacs-init-pandoc-mode-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package markdown-mode
+          :config (use-package pandoc-mode                     ;(pandocNestedUsePkg)
+                    :commands pandoc-load-default-settings
+                    :hook markdown-mode
+                    :config (pandoc-load-default-settings)))
+      #+END_SRC
+
+      I'm using a nested ~use-package~ invocation [[(pandocNestedUsePkg)][here]], to load this
+      as late as possible.
+
+    - =magit=
+      
+      #+NAME: lit-emacs-init-magit-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package magit
+          :bind ("H-g" . magit-status))
+      #+END_SRC
+
+    - =projectile=
+
+      The project management package.
+
+      #+NAME: lit-emacs-init-projectile-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package projectile
+          :config (projectile-mode +1)
+          :bind-keymap ("H-p" . projectile-command-map))               ;(projectileKeymap)
+      #+END_SRC
+
+      I'm defining how to access the ~projectile-mode-map~ [[(projectileKeymap)][here]] rather
+      than any specific command, as that's the recommended way to set
+      this up.
+
+
+*** Text/Code Editing Functionality
+
+
+    - =prog-mode= related "look-and-feel-and-behaviour" packages
+
+      #+NAME: lit-emacs-init-delims-wc-etc-prog-mode-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package rainbow-delimiters
+          ;; Toggle rainbows
+          :bind ("H-c" . rainbow-delimiters-mode)
+          :hook (prog-mode . rainbow-delimiters-mode)
+          :diminish)
+
+        (use-package smartparens
+          :hook (prog-mode . smartparens-mode)
+          :diminish)
+
+        (use-package column-enforce-mode
+          :hook prog-mode
+          :diminish)
+
+        (use-package highlight-indentation
+          :hook ((prog-mode . highlight-indentation-mode)
+                 (prog-mode . highlight-indentation-current-column-mode)
+                 (org-mode  . highlight-indentation-mode))
+          :diminish highlight-indentation-mode
+          :diminish highlight-indentation-current-column-mode)
+
+        (use-package whitespace-cleanup-mode
+          :hook prog-mode
+          :diminish)
+      #+END_SRC
+
+      Delimiter and whitespace handling. Not all that exiting.
+
+
+    - =avy= editing/navigation
+
+      #+NAME: lit-emacs-init-avy-prog-mode-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        ;; Fast navigation and 'zap'-ing to specific nearby chars, with a
+        ;; keyboard based "disambiguation" mode. 
+        (use-package avy                                                     ;(avyMode)
+          :config (avy-setup-default)
+          :bind (("C-'" . avy-goto-char-2)
+                 ("C-*" . avy-goto-subword-1)
+                 ("M-z" . avy-zap-up-to-char)
+                 ("M-Z" . avy-zap-to-char)
+                 ("H-'" . avy-goto-char-in-line)))
+      #+END_SRC
+
+
+      For info on what [[(avyMode)][=avy=]] does exactly, see the built-in
+      documentation or https://github.com/abo-abo/avy.
+
+    - =flyspell= and =flycheck=
+
+      #+NAME: lit-emacs-init-flyspell-flycheck-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        ;; flyspell
+        (use-package flyspell
+          :diminish flyspell-prog-mode                            ;(flyspellProgMode)
+          :diminish flyspell-mode
+          :hook ((prog-mode . flyspell-prog-mode)
+                 (text-mode . flyspell-mode)))
+
+        ;; flycheck
+        (use-package flycheck
+          :hook (flycheck-mode . flycheck-cask-setup))
+
+        ;; pos-tip support for displaying flycheck errors
+        (use-package pos-tip
+          :defer t)
+        (use-package flycheck-pos-tip
+          :diminish
+          :after (pos-tip flycheck)
+          :config (flycheck-pos-tip-mode))
+
+      #+END_SRC
+
+      Note that ~flyspell-mode~ for /programming/ mode is a [[(flyspellProgMode)][different]]
+      mode than the /text/ oriented one.
+
+
+
+    - =company=
+
+      Completion setup is fairly simplistic:
+
+      #+NAME: lit-emacs-init-company-setup
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package company
+          :diminish company-mode
+          :hook (after-init-hook . company-global-mode)
+          :bind (:map company-mode-map
+                      ("C-:" . company-complete)))               ;(companyCompleteBind)
+      #+END_SRC
+
+      Note that [[(companyCompleteBind)][this]] is not the only place where I make bindings
+      related to the ~company-mode-map~. See also TBD.
+
+
+
+
+
+*** Lang Major Modes
+
+    Initialisation for specific programming language major modes. Many
+    don't need anything specific, but a handful do.
+
+    - Haskell
+
+      Due to a key map conflict with ~haskell-interactive-mode~, I
+      need to unset some bindings when ~haskell-mode~ loads.
+
+      #+NAME: lit-emacs-init-haskell-mode
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package haskell-mode
+          :defer t
+          :config
+          (mapc (lambda (x) (define-key haskell-mode-map (kbd x) nil))
+                '("C-c C-i"
+                  "C-c C-l"
+                  "C-c C-t"
+                  "C-c C-b"
+                  "C-c C-v")))
+
+        (use-package flycheck-haskell
+          :after (flycheck haskell-mode)
+          :hook (flycheck-mode . flycheck-haskell-setup))
+
+      #+END_SRC
+
+
+*** Keybindings
+
+    Non-specific key-binds. Mostly to do with functions built into =emacs=.
+
+    - Basic =emacs= functionality.
+
+      #+NAME: lit-emacs-init-window-keybinds
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        ;; Window/buffer manipulation
+        (global-set-key (kbd "H-<left>")         'windmove-left)
+        (global-set-key (kbd "H-<right>")        'windmove-right)
+        (global-set-key (kbd "H-<up>")           'windmove-up)
+        (global-set-key (kbd "H-<down>")         'windmove-down)
+        (global-set-key (kbd "C-H-<left>")       'buf-move-left)
+        (global-set-key (kbd "C-H-<right>")      'buf-move-right)
+        (global-set-key (kbd "C-H-<up>")         'buf-move-up)
+        (global-set-key (kbd "C-H-<down>")       'buf-move-down)
+        (global-set-key (kbd "C-x C-M-s")        'nilgu/split-win)     ;(splitwinBind)
+
+        ;; Save, exit, and kill the server
+        (global-set-key (kbd "C-x C-M-c") 'save-buffers-kill-emacs)  ;(savebuffkillemacs)
+
+        ;; Better keybinding for dabbrev-expand, as "M-\" is awkward on a
+        ;; nordic keyboard.
+        (global-set-key (kbd "H-:")              'dabbrev-expand)
+
+        ;; Useful command for basic code formatting. Especially for
+        ;; struct/record layouts, list/map literals and the like.
+        (global-set-key (kbd "C-c a")            'align-regexp)       ;(alignregexpBind)
+      #+END_SRC
+
+      Two noteworthy lines above are line [[(splitwinBind)]], in which we
+      make use of [[(defNilguSplitwin)][nilgu/split-win]], and line [[(savebuffkillemacs)]] which
+      sets up a binding for killing the current client /and/ the server.
+
+      Additionally, there's a binding for [[(alignregexpBind)][align-regexp]], which is a
+      handy tool to have for quick ad-hoc code formatting. Can be
+      combined with a prefix argument. for a more powerful version of
+      the command.
+
+
+*** Additional Files To Load
+
+    WRITTEN: [2018-10-17 ons 13:22]
+
+    Some functionality that lives in other files.
+
+    #+NAME: lit-emacs-init-load-lit-init-files
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no
+      (lit-emacs-init-load "linum")                                 ;(loadLinumSetup)
+      (lit-emacs-init-load "org")                                     ;(loadOrgSetup)
+      (lit-emacs-init-load "helm")                                   ;(loadHelmSetup)
+      (lit-emacs-init-load "templating")                       ;(loadTemplatingSetup)
+    #+END_SRC
+
+
+    - [[(loadLinumSetup)][=linum=]] setup.
+
+      I like having linum on, but ~global-linum-mode~ is somewhat ill
+      behaved. See [[file:lit-emacs-init-linum.org][lit-emacs-init-linum.org]].
+    
+
+    
+
+* TODO Rewrite the Initialisation section
+
+  I've stopped using the method outlined there to load other literate
+  elisp files. Instead I grab them all manually from init.el, which
+  also allows me to byte-compile them on demand.
+
+* Changelog
+
+  This is a local record of changes made to this file. May be inaccurate. I'm only human.
+
+
+** Changes [2018-10-18 tor]
+
+   - Removed the hook setting ~magit-last-seen-setup-instructions~ logic.

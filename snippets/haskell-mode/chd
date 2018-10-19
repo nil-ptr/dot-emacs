@@ -1,0 +1,12 @@
+# -*- mode: snippet -*-
+# name: header comment block
+# key: chd
+# expand-env: ((yas-indent-line 'fixed) (yas-wrap-around-region 'nil))
+# --
+
+
+----------------------------------------------------------------------
+--- ${1:$(make-string (- 31 (floor (string-width yas-text) 2)) ?\ )}$1${1:$(make-string (- 31 (ceiling (string-width yas-text) 2)) ?\ )} ---
+----------------------------------------------------------------------
+
+$0

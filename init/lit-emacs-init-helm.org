@@ -1,0 +1,120 @@
+#+TITLE: Helm Setup
+#+Author: Nils Gustafsson
+#+OPTIONS: num:3 toc:nil
+
+This file responsible is for initialising my ~helm~ setup, and is
+imported in my [[file:init.org][init.org]] file. This is a literate =emacs lisp= file,
+written in =org-mode=.
+
+* Helm
+
+  My incremental search and completion framework of choice. 
+
+  There are two (-ish) things to set up here: =helm= itself, and the
+  various =helm-*= packages for interacting with other packages via
+  helm.
+
+
+** Main Setup
+
+   Not a lot to say here, other than that I want the basic =helm=
+   functionality loaded automatically, if emacs is idle.
+
+   #+NAME: lit-emacs-init-helm-main-setup
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+     ;; Load helm
+     (use-package helm
+       ;; Load unconditionally after 2 seconds of idle time.
+       :defer 2 
+       :bind (("C-s"     . helm-occur)
+              ("M-x"     . helm-M-x)
+              ("C-x C-f" . helm-find-files)
+              ("C-x b"   . helm-buffers-list)
+              ("<f6>"    . helm-execute-kmacro)
+              ))
+
+     ;; Load helm-ag
+     (use-package helm-ag
+           :after (helm)
+           :bind ("H-s" . helm-ag))
+
+     ;; Load helm-org-rifle
+     (use-package helm-org-rifle
+       :after (helm org)
+       :bind ("H-A" . helm-org-rifle-agenda-files))
+
+   #+END_SRC
+
+   In addition, we could load and use =helm-dash= here, but I'm
+   electing to leave that disabled (using ~:tangle no~) for now.
+
+   #+NAME: lit-emacs-init-helm-main-dash-setup
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no
+     (use-package helm-dash
+       :defer t
+       :after (helm)
+       :bind (("H-z a"   . helm-dash-activate-docset)
+              ("H-z z"   . helm-dash)
+              ("H-z H-z" . helm-dash-at-point)))
+   #+END_SRC
+   
+
+** Crossover Setups
+
+   There are a bunch of packages for interacting with other modes
+   using helm. I use some of them.
+
+   - =helm-flyspell=
+
+     
+     #+NAME: lit-emacs-init-helm-flyspell-setup
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+       (use-package helm-flyspell
+         :defer t
+         :after (helm flyspell)
+         :bind ("C-;" . helm-flyspell-correct))
+
+     #+END_SRC
+
+   - =helm-flycheck=
+
+     
+     #+NAME: lit-emacs-init-helm-flycheck-setup
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+       (use-package helm-flycheck
+         :defer t
+         :after (helm flycheck)
+         :bind ("C-c ! h" . helm-flycheck))
+
+     #+END_SRC
+
+
+   - =helm-projectile=
+
+     #+NAME: lit-emacs-init-helm-projectile-setup
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+       (use-package helm-projectile
+         :defer t
+         :after (helm projectile)
+         :config (helm-projectile-on))
+
+     #+END_SRC
+
+
+   - =helm-company=
+
+     #+NAME: lit-emacs-init-helm-company-setup
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+       (use-package helm-company
+         :defer t
+         :after (helm company)
+         :bind (:map company-active-map 
+                     ("C-:" . helm-company)))
+
+     #+END_SRC
+     

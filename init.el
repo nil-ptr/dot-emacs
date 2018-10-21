@@ -7,10 +7,6 @@
 
 ;;; Code:
 
-
-;; Init load timing
-
-
 ;; This needs to be here to please package.el
 ;(package-initialize)
 
@@ -39,12 +35,14 @@
 ;;; SOME SETUP                     ;;;
 ;;; ------------------------------ ;;;
 
+;; cask.el location
+(defconst user-dot-cask-directory "~/.cask")
 
 
 ;; Activate cask
-(require 'cask "~/.cask/cask.el")
+(require 'cask (expand-file-name "cask.el" user-dot-cask-directory))
 (cask-initialize)
-(add-to-list 'load-path "~/.emacs.d/.cask/")
+(add-to-list 'load-path (expand-file-name ".cask" user-emacs-directory))
 
 ;; include pallet
 (require 'pallet)
@@ -54,7 +52,7 @@
 (require 'iso-transl)
 
 ;; set custom file name
-(setq custom-file "~/.emacs.d/custom.el")
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 
 ;; Load use-package
 ;(eval-when-compile
@@ -90,7 +88,7 @@
 ;;; ------------------------------ ;;;
 
 ;; My literate emacs init files are in this dir
-(defconst lit-emacs-init-dir "~/.emacs.d/init")
+(defconst lit-emacs-init-dir (expand-file-name "init" user-emacs-directory))
 
 ;; Init imports to run
 (defconst lit-emacs-init-imports

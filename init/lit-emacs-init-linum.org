@@ -62,49 +62,47 @@ written in =org-mode=.
        ;; Redefine linum-on to respect our new custom
        ;; variables.
        :config
-       (progn
-         (message "%s %s"
-                  "from lit-emacs-init-linum:"
-                  "overriding definition of 'linum-on'...")
-         (defun linum-on ()            ;(redef_linum_on)
-           "Activate line-numbers in the current buffer, unless this
+       (message "%s %s"
+                "from lit-emacs-init-linum:"
+                "overriding definition of 'linum-on'...")
+       (defun linum-on ()            ;(redef_linum_on)
+         "Activate line-numbers in the current buffer, unless this
      is ruled out by `global-linum-disabled-modes-list'
      `global-linum-ignore-starred-buffers'.
 
      This function overrides the default definition exported in
      linum.el"
 
-           (unless (or (minibufferp)
-                       (member major-mode global-linum-disabled-modes-list)
-                       (and global-linum-ignore-starred-buffers
-                            (string-match "*" (buffer-name))
-                            ))
-             (linum-mode 1))))
-       :init (progn
-               ;; Define some customizable variables.
-               (defcustom global-linum-disabled-modes-list 
-                 '(eshell-mode
-                   wl-summary-mode
-                   compilation-mode
-                   org-mode
-                   text-mode
-                   dired-mode
-                   doc-view-mode
-                   pdf-view-mode
-                   haskell-interactive-mode)
-                 "List of major modes where `global-linum-mode' shouldn't apply."
-                 :type '(repeat (sexp :tag "Major mode"))
-                 :tag "Global Linum Mode Major Mode Blacklist"
-                 :group 'linum)
+         (unless (or (minibufferp)
+                     (member major-mode global-linum-disabled-modes-list)
+                     (and global-linum-ignore-starred-buffers
+                          (string-match "*" (buffer-name))
+                          ))
+           (linum-mode 1)))
 
-               (defcustom global-linum-ignore-starred-buffers 't
-                 "If non-nil, `global-linum-mode' will ignore starred buffers such as *Gnu Emacs*."
-                 :type 'boolean
-                 :tag "Global Linum Mode Ignore Starred Buffers"
-                 :group 'linum))
-       ;:hook (after-init . (lambda () (global-linum-mode 1)))
-       )
+       :preface
+       ;; Define some customizable variables.
+       (defcustom global-linum-disabled-modes-list
+         '(eshell-mode
+           wl-summary-mode
+           compilation-mode
+           org-mode
+           text-mode
+           dired-mode
+           doc-view-mode
+           pdf-view-mode
+           haskell-interactive-mode)
+         "List of major modes where `global-linum-mode' shouldn't apply."
+         :type '(repeat (sexp :tag "Major mode"))
+         :tag "Global Linum Mode Major Mode Blacklist"
+         :group 'linum)
 
+       (defcustom global-linum-ignore-starred-buffers 't
+         "If non-nil, `global-linum-mode' will ignore starred buffers such as *Gnu Emacs*."
+         :type 'boolean
+         :tag "Global Linum Mode Ignore Starred Buffers"
+         :group 'linum)
+       :hook (after-init . (lambda () (global-linum-mode 1))))
    #+END_SRC
 
 

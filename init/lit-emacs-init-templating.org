@@ -2,9 +2,8 @@
 #+Author: Nils Gustafsson
 #+OPTIONS: num:3 toc:nil
 
-This file is part of my =emacs= init setup, and should be loaded from
-~init.org~. This is a literate =emacs lisp= file, written in
-=org-mode=.
+This file is part of my =emacs= init setup, and should be imported in
+[[file:~/.emacs.d/init.el][init.el]]. This is a literate =emacs lisp= file, written in =org-mode=.
 
 
 * =yasnippet=
@@ -17,8 +16,22 @@ This file is part of my =emacs= init setup, and should be loaded from
     ;; yasnippet
     (use-package yasnippet
       :diminish yas-minor-mode
-      :defer t
-      :config (yas-global-mode 1))
+      ;; Load eagerly, this needs to be active, and fail fast if it's
+      ;; broken. Snippets are loaded just in time, anyway.
+      :demand t
+      ;; Bindings copied from jweigley's dot-emacs.
+      :bind (("C-c y d" . yas-load-directory)
+             ("C-c y i" . yas-insert-snippet)
+             ("C-c y f" . yas-visit-snippet-file)
+             ("C-c y n" . yas-new-snippet)
+             ("C-c y t" . yas-tryout-snippet)
+             ("C-c y l" . yas-describe-tables)
+             ("C-c y g" . yas-global-mode)
+             ("C-c y m" . yas-minor-mode)
+             ("C-c y a" . yas-reload-all)
+             ("C-c y x" . yas-expand))
+      :config
+      (yas-global-mode 1))
 
     ;; aya
     (use-package auto-yasnippet
@@ -30,7 +43,8 @@ This file is part of my =emacs= init setup, and should be loaded from
     ;; helm source for yasnippet
     (use-package helm-c-yasnippet                             ;(helmCYasnippetLoad)
       :defer t
-      :after (helm yasnippet))
+      :after (helm yasnippet)
+      :bind ("C-c y :" . helm-yas-complete))
 
   #+END_SRC
 
@@ -51,11 +65,11 @@ This file is part of my =emacs= init setup, and should be loaded from
 
    Firstly, I'd like to have a function to check that the template
    directory exists, and that the templates within it have reasonable
-   names. =yatemplate= prefers templates to have names of the form 
+   names. =yatemplate= prefers templates to have names of the form
 
        #+NAME: lit-emacs-init-yatemplate-filename-grammar
        #+BEGIN_VERBATIM
-      
+
        <TEMPLATE_NAME> := <NUMBER><SEP><REGEX_NAME>
 
        <NUMBER> := {x | x matches '[0-9]+'}
@@ -63,9 +77,9 @@ This file is part of my =emacs= init setup, and should be loaded from
        <COLON>  := <VAR:yatemplate-separator>
 
        <REGEX_NAME> := { "valid regex that doesn't end with a '$' character" }
-       #+END_VERBATIM 
+       #+END_VERBATIM
 
-    where 
+    where
 
     - =x matches '[0-9]+'= should be understood to mean "x matches the
       regular expression =[0-9]+="
@@ -114,7 +128,7 @@ This file is part of my =emacs= init setup, and should be loaded from
     Not fully satisfied with this, as it doesn't handle the filenames
     quite right. We should split on the first instance of
     ~yatemplate-separator~, and /then/ attempt a regex match.
-    
+
     A more sensible approach might be to add a function that verifies
     that all of ~auto-insert-alist~ is well formed after populating
     it, rather than checking the filenames themselves.
@@ -130,8 +144,10 @@ This file is part of my =emacs= init setup, and should be loaded from
      (use-package yatemplate
        :defer t
        :commands yatemplate-fill-alist
-       :hook ((after-init . yatemplate-fill-alist)
-              (find-file  . auto-insert)))
+       :init
+       (eval-after-load 'auto-insert
+         #'yatemplate-fill-alist)
+       :hook (find-file  . auto-insert))
    #+END_SRC
 
    The above setup runs on an ~after-init-hook~, because the behaviour

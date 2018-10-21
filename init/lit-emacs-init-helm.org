@@ -17,101 +17,63 @@ written in =org-mode=.
 
 ** Main Setup
 
-   WRITTEN [2018-10-19 fre 12:18]
+   WRITTEN [2018-10-20 lör 09:53]
 
-   The only notable thing here is a hack around ~find-file-read-only~,
-   bound to =C-x C-r= by default. Since I'm loading =helm= lazily,
-   ~helm-mode~ might not have loaded by the time I run a
-   ~find-file-read-only~ command. If that minor mode /is/ active
-   however, it automatically replaces the built in completion methods
-   employed in ~find-file-read-only~ and friends.
+   The only really noteworthy thing here is the use of =advice=,
+   defined on line [[(helmCompReadAdvice)]], to make =helm= load on any use of
+   =completing-read= or =read-file-name=. This ensures that those
+   functions are "helm-ified" just in time, if =helm= hasn't been
+   loaded already. The =advice= is removed as part of the
+   =:config= step, when =helm= eventually loads.
 
-   But there's no hook or any other obvious thing we could attach
-   directly to that function to force =helm= to load just in
-   time. Instead, I'm left using a hack that works as follows:
+   This setup leads to meaningless warnings from the byte-compiler
+   though, which is why I claim that advice function is defined by the
+   package in the =:functions= clause. It's almost true.
 
-   1. [[(fileReadOnlyHackHook)][Add an ~after-init~ hook]], which defines a wrapper for
-      ~find-file-read-only~, and remaps the binding of that function
-      to the wrapper.
-
-      When called, the wrapper is then responsible for:
-
-      1. [[(fileReadOnlyHackRemove1)][Removing]] the remap of ~find-file-read-only~ to the wrapper,
-         if it exists. Yes, the wrapper un-maps itself.
-
-      2. [[(fileReadOnlyHackModeOn)][Activating]] ~helm-mode~.
-
-      3. [[(fileReadOnlyHackCall)][Calling]] the ~find-file-read-only~ function [[(fileReadOnlyHackCall)][interactively]].
-
-   2. [[(fileReadOnlyHackRemove2)][Check]] if the remap defined in the previous step still exists
-      when =helm= is loaded, and remove it if it does.
+   Note: I'm forced to manually call =diminish= [[(helmExtraDiminish)][here]] to prevent the
+   mode from getting "undiminished" by the advice. Not sure how to
+   avoid that.
 
    #+NAME: lit-emacs-init-helm-main-setup
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
 
      ;; Load helm
      (use-package helm
-       ;; Load unconditionally after 3 seconds of idle time.
-       :defer 3
+       ;; Load unconditionally after 5 seconds of idle time.
+       :defer 5
        ;; Hide the helm minor mode
-       :diminish
+       :diminish (helm-mode)
+       ;; Prevent spurious warnings from the byte-compiler, by telling it a
+       ;; white lie.
+       :functions (my-init-completing-read-helm-advice)
        :bind (("C-s"     . helm-occur)
               ("M-x"     . helm-M-x)
               ("C-x C-f" . helm-find-files)
               ("C-x b"   . helm-buffers-list)
               ("<f6>"    . helm-execute-kmacro))
+       :init
+       (defun my-init-completing-read-helm-advice (&rest args) ;(helmCompReadAdvice)
+         "Advice for `completing-read' and `read-file-name' that
+          forces `helm-mode' to activate. This advice removes itself
+          from both functions when invoked."
+         (helm-mode 1)
+         ;; This is neccesary, for reasons I'm not fully clear on. I guess
+         ;; this function is somehow unaware of the :diminish above?
+         (diminish 'helm-mode)                                  ;(helmExtraDiminish)
+         (advice-remove 'completing-read
+                        #'my-init-completing-read-helm-advice)
+         (advice-remove 'read-file-name
+                        #'my-init-completing-read-helm-advice))
 
-       ;; This sets up a one time key bind remap for find-file-read-only,
-       ;; so that helm-mode is activated before the real
-       ;; find-file-read-only is ever called.
-       :hook (after-init .
-              (lambda ()                                                    ;(fileReadOnlyHackHook)
-               (progn
-                 (defun nilgu/init/find-file-read-only-load-helm-hack ()
-                   "Hook loading of `helm-mode' on to `find-file-read-only'.
+       (defun my-init-completing-read-helm-advice-hook ()
+         "Adds `my-init-completing-read-helm-advice' to the
+          relevant functions after init."
+         (advice-add 'completing-read
+                     :before #'my-init-completing-read-helm-advice)
+         (advice-add 'read-file-name
+                     :before #'my-init-completing-read-helm-advice))
 
-     DO NOT CALL THIS FUNCTION DIRECTLY OR BIND IT TO ANY KEYS
-
-     This is only meant to force the `helm-mode' minor mode to load
-     before `find-file-read-only' is called interactively, by
-     replacing (remapping) the keybinding of that symbol during
-     init. It will remove the remap once called.
-
-     This hack is sometimes useful, since I load the `helm' package
-     lazily, and there's no obvious hook for `find-file-read-only'
-     calls that I could attach an autoloaded symbol to.
-
-     NOTE: This function will delete the remap of
-     `find-file-read-only' once it's called, restoring the original
-     meaning of that keybinding.
-
-     NOTE: This function may linger as a remap after `helm' was loaded
-     in some cases (if `helm' is loaded eagerly for some reason), but
-     the above NOTE still applies. It'll go away after you call it
-     once."
-
-                   (interactive)
-                   (when (eq 'nilgu/init/find-file-read-only-load-helm-hack ;(fileReadOnlyHackRemove1)
-                             (command-remapping 'find-file-read-only))
-                     (progn
-                      (message "%s %s"
-                               "from nilgu/init/find-file-read-only-load-helm-hack:"
-                               "removing remap")
-                      (unbind-key [remap find-file-read-only])))
-
-                   (helm-mode 1)                                            ;(fileReadOnlyHackModeOn)
-                   (call-interactively 'find-file-read-only))               ;(fileReadOnlyHackCall)
-                 (bind-key [remap find-file-read-only]
-                           'nilgu/init/find-file-read-only-load-helm-hack))))
-       :config (progn
-                 (helm-mode 1)
-                 (when (eq 'nilgu/init/find-file-read-only-load-helm-hack   ;(fileReadOnlyHackRemove2)
-                         (command-remapping 'find-file-read-only))
-                   (progn
-                     (message "%s %s"
-                       "from lit-emacs-init-helm:"
-                       "removing lingering init remap of 'find-file-read-only...")
-                     (unbind-key [remap find-file-read-only])))))
+       :hook (after-init . my-init-completing-read-helm-advice-hook))
 
      ;; Load helm-ag
      (use-package helm-ag
@@ -144,6 +106,11 @@ written in =org-mode=.
    There are a bunch of packages for interacting with other modes
    using helm. I use some of them.
 
+   Note that all of the below declarations assume that =helm=
+   autoloads are in scope. They do not, however, assume the same about
+   the other packages they interact with. Hence the =:after (foo)=
+   clauses.
+
    - =helm-flyspell=
 
 
@@ -152,7 +119,7 @@ written in =org-mode=.
 
        (use-package helm-flyspell
          :defer t
-         :after (helm flyspell)
+         :after (flyspell)
          :bind ("C-;" . helm-flyspell-correct))
 
      #+END_SRC
@@ -165,7 +132,7 @@ written in =org-mode=.
 
        (use-package helm-flycheck
          :defer t
-         :after (helm flycheck)
+         :after (flycheck)
          :bind ("C-c ! h" . helm-flycheck))
 
      #+END_SRC
@@ -173,25 +140,38 @@ written in =org-mode=.
 
    - =helm-projectile=
 
+     It's not obvious from the code, but, *yes*, this does cause the
+     =helm-projectile= keybinding remaps to come into effect just in
+     time.
+
      #+NAME: lit-emacs-init-helm-projectile-setup
      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
 
        (use-package helm-projectile
          :defer t
-         :after (helm projectile)
-         :config (helm-projectile-on))
+         :commands (helm-projectile-on)
+         :after (projectile)
+         :init
+         (eval-after-load 'projectile (lambda () (helm-projectile-on))))
 
      #+END_SRC
 
 
    - =helm-company=
 
+     This adds a binding to the /active/ =company= map, which means
+     the binding will be available only when a list of completions is
+     visible. In other words, the binding allows me to turn a list of
+     completions that is visible at the cursor into a searchable
+     =helm= buffer. This is quite a handy tool to have around, should
+     the list of possible completions happen to be very long.
+
      #+NAME: lit-emacs-init-helm-company-setup
      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
 
        (use-package helm-company
          :defer t
-         :after (helm company)
+         :after (company)
          :bind (:map company-active-map
                      ("C-:" . helm-company)))
 

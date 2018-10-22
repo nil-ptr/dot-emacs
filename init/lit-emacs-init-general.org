@@ -140,6 +140,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
          (use-package git-commit))
 
        (use-package magit-files
+         :commands (global-magit-file-mode)
          :config
          (global-magit-file-mode)))
    #+END_SRC

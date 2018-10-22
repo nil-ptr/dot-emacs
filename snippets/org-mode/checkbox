@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: checkbox
+# key: cb
+# expand-env: ((yas-indent-line 'fixed) (yas-wrap-around-region (quote nil)))
+# --
+
+- [ ] $1
+
+${2:cb}$0

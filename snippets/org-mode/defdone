@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# key: dod
+# name: def of done
+# expand-env: ((yas-indent-line 'fixed) (yas-wrap-around-region (quote nil)))
+# --
+- [ ] ${1:Done when}:
+
+  ${2:cb}$0

@@ -96,6 +96,10 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+NAME: lit-emacs-init-pdf-tools
    #+BEGIN_SRC emacs-lisp +n
      (use-package pdf-tools
+       :defer t
+       ;; Trick copied from the use-package README. This will load
+       ;; pdf-tools just in time.
+       :magic ("%PDF" . pdf-view-mode)
        :config (pdf-tools-install))
    #+END_SRC
 

@@ -131,7 +131,7 @@
       nil))))
  '(org-agenda-files
    (quote
-    ("~/code/haskell/personal/emoric/emoric.org" "~/edu/5dv180/course.org" "~/edu/5EL006/course.org" "~/.orgfiles/gbf_stuff.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/gsons.org" "~/.orgfiles/local.org" "~/.orgfiles/general.org")))
+    ("~/edu/proj_niclas_2018-07-05/proj.org" "~/code/haskell/personal/emoric/emoric.org" "~/edu/5dv180/course.org" "~/edu/5EL006/course.org" "~/.orgfiles/gbf_stuff.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/gsons.org" "~/.orgfiles/local.org" "~/.orgfiles/general.org")))
  '(org-agenda-follow-indirect nil)
  '(org-agenda-mouse-1-follows-link nil)
  '(org-agenda-prefix-format
@@ -157,6 +157,9 @@
  '(org-agenda-window-frame-fractions (quote (0.5 . 0.75)))
  '(org-agenda-window-setup (quote only-window))
  '(org-bullets-bullet-list (quote ("●" "◉" "○" "◒" "◓" "✪")))
+ '(org-clock-clocktable-default-properties
+   (quote
+    (:maxlevel 2 :scope file :block thisweek :link t :indent t :narrow 40)))
  '(org-clock-in-switch-to-state "IN-PROGRESS")
  '(org-clock-x11idle-program-name "xprintidle")
  '(org-columns-default-format
@@ -274,7 +277,8 @@
  '(yas-prompt-functions
    (quote
     (yas-dropdown-prompt yas-completing-prompt yas-ido-prompt yas-no-prompt)))
- '(yas-snippet-dirs (quote ("~/.emacs.d/snippets" yas-installed-snippets-dir))))
+ '(yas-snippet-dirs (quote ("~/.emacs.d/snippets" yas-installed-snippets-dir)))
+ '(yas-triggers-in-field t))
 
 
 (custom-set-faces

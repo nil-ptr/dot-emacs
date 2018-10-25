@@ -6,6 +6,18 @@ General/misc package setup. In other words, this is where I configure
 and load packages that don't fit in any other obvious
 category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
+
+* Imports and Prerequisites
+
+  This file needs access to the full =use-package= package when
+  compiled.
+
+  #+NAME: lit-emacs-general-imports
+  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+    (eval-when-compile
+      (require 'use-package))
+  #+END_SRC
+
 * Basic Initialisation
 
   Some basic things I need out of the way.
@@ -32,27 +44,39 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+NAME: lit-emacs-init-window-keybinds
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      ;; Window/buffer manipulation
-     (bind-keys :map global-map
-      ("H-<left>"    . windmove-left)
-      ("H-<right>"   . windmove-right)
-      ("H-<up>"      . windmove-up)
-      ("H-<down>"    . windmove-down)
-      ("C-H-<left>"  . buf-move-left)
-      ("C-H-<right>" . buf-move-right)
-      ("C-H-<up>"    . buf-move-up)
-      ("C-H-<down>"  . buf-move-down)
-      ("C-x C-M-s"   . my-split-to-3-windows)                         ;(splitwinBind)
+     (use-package buffer-move
+       :defer t
+       :bind (:map global-map
+                   ("C-H-<left>"  . buf-move-left)
+                   ("C-H-<right>" . buf-move-right)
+                   ("C-H-<up>"    . buf-move-up)
+                   ("C-H-<down>"  . buf-move-down)))
+     (bind-keys
+      :map global-map
+      ("H-<left>"  . windmove-left)
+      ("H-<right>" . windmove-right)
+      ("H-<up>"    . windmove-up)
+      ("H-<down>"  . windmove-down)
+      ("C-x C-M-s" . my-split-to-3-windows)                         ;(splitwinBind)
 
       ;; Save, exit, and kill the server
-      ("C-x C-M-c"   . save-buffers-kill-emacs)                  ;(savebuffkillemacs)
+      ("C-x C-M-c" . save-buffers-kill-emacs)                  ;(savebuffkillemacs)
 
       ;; Better keybinding for dabbrev-expand, as "M-\" is awkward on a
       ;; nordic keyboard.
-      ("H-:"         . dabbrev-expand)
+      ("H-:"       . dabbrev-expand)
 
       ;; Useful command for basic code formatting. Especially for
       ;; struct/record layouts, list/map literals and the like.
-      ("C-c a"       . 'align-regexp))                             ;(alignregexpBind)
+      ("C-c a"     . align-regexp)                               ;(alignregexpBind)
+
+      ;; Narrowing keys. See also my org settings.
+      ("H-n n"     . narrow-to-region)
+      ("H-n f"     . narrow-to-defun)
+      ("H-n p"     . narrow-to-page)
+      ;; Undo the narrowing.
+      ("H-n w"     . widen)
+      ("H-n C-g"   . widen))
 
    #+END_SRC
 
@@ -67,6 +91,14 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    A further note: the "H" in the keybindings above refers to the
    "Hyper" key, which is what I've reassigned capslock to. Because who
    even uses capslock?
+
+** TODO Narrowing and Pages
+
+   The narrowing and page ideas in =emacs= are neat, but inserting
+   form feed characters in to source code willy nilly makes me a
+   little uncomfortable.
+
+   So, based on the ideas in page.el, I'll implement my own substitutes.
 
 ** Emacs Server
 
@@ -95,10 +127,14 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
    #+NAME: lit-emacs-init-pdf-tools
    #+BEGIN_SRC emacs-lisp +n
+     (use-package pdf-occur
+       :defer t
+       :commands (pdf-occur-global-minor-mode))
      (use-package pdf-tools
        :defer t
        ;; Trick copied from the use-package README. This will load
        ;; pdf-tools just in time.
+       :commands (pdf-tools-install)
        :magic ("%PDF" . pdf-view-mode)
        :config (pdf-tools-install))
    #+END_SRC
@@ -170,6 +206,8 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
 ** General Editing Functionality
 
+
+
 *** =company=
 
     Completion setup is fairly simplistic:
@@ -225,6 +263,103 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     - Which modes are affected by the =global-company-mode= is
       determined by a =custom= variable.
 
+*** =pcomplete=
+
+    Set up =pcomplete= as a =completion-at-point= function. =org=
+    wants this, plus it gives me a neat way to add basic custom
+    completion for certain basic things like =haskell= pragmas and the
+    like. In general =pcomplete= can be useful to set up when the set
+    of possible things to complete is small and the set of completions
+    is small. It's sort of like the completion framework in
+    =bash=. Dumb, but straight-forward.
+
+    Note: This is very much /not/ a replacement for "real" completion
+    facilities. I think more of it as being a useful way to add basic
+    custom completion. Not totally unlike =abbrev=, but slightly
+    cleverer.
+
+    #+NAME: lit-emacs-init-pcomplete-setup
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+      (use-package pcomplete
+        :defer t
+        :commands (pcomplete
+                   pcomplete-completions-at-point
+                   pcomplete--here
+                   pcomplete-entries)
+        :bind (:map global-map
+                    ("H-! c <tab>" . pcomplete))
+        ;; Tying the load to company-mode for now.
+        :init
+        (defun my-setup-pcomplete-capf-hook()
+          (add-hook 'completion-at-point-functions #'pcomplete-completions-at-point))
+        :config
+        (unless (or (get 'pcomplete-default-completion-function 'saved-value)
+                    (get 'pcomplete-default-completion-function 'themed-value))
+          (mapc (apply-partially #'message "[init-general|pcomplete] %s")
+                '(
+      "pcomplete-default-completion-function appears to be set to it's default value!"
+      "This is not advisable, as it won't compile and evaluate properly."
+      "Attempting to set alternate value.."))
+          (customize-set-variable
+           'pcomplete-default-completion-function
+           #'(lambda() (pcomplete-here (pcomplete-entries)))    ;(pcmp:defaultCmpDef)
+           (concat "[init-general] Auto-replaced, to avoid "
+                   "errors if `pcomplete.el' was loaded in "
+                   "compiled form. Equivalent to the "
+                   "original definition given in "
+                   "`pcomplete.el'.")))
+        (unless (or (get 'pcomplete-command-completion-function 'saved-value)
+                    (get 'pcomplete-command-completion-function 'themed-value))
+          (mapc (apply-partially #'message "[init-general|pcomplete] %s")
+                '(
+      "pcomplete-command-completion-function appears to be set to it's default value!"
+      "This is not advisable, as it won't compile and evaluate properly."
+      "Attempting to set alternate value.."))
+          (customize-set-variable
+           'pcomplete-command-completion-function
+           #'(lambda () (pcomplete-here (pcomplete-executables)))
+           (concat "[init-general] Auto-replaced, to avoid "
+                   "errors if `pcomplete.el' was loaded in "
+                   "compiled form. Equivalent to the "
+                   "original definition given in "
+                   "`pcomplete.el'.")))
+        :hook (company-mode . my-setup-pcomplete-capf-hook))
+
+    #+END_SRC
+
+
+
+    *IMPORTANT NOTE*: Do /not/ use the default value for
+    =pcomplete-default-completion-functions=, as it will misbehave and
+    throw "invalid function" errors both when invoked using
+    =pcomplete= and when used as a completion at point back-end for
+    =company=. The [[(pcmp:defaultCmpDef)][lambda expression]] I substitute it with is precisely
+    the same as the definition given in =pcomplete.el= except quoted
+    in a slightly different way[fn:pcomp], which makes the
+    byte-compiler do the right thing.
+
+    If anyone reading this actually cares about the details of what
+    this is fixing: the default value that =customize= ends up with if
+    =pcomplete.el= is byte-compiled is the same lambda expression I've
+    used in the code above, but with /only the lambda part
+    byte-compiled!/ Meaning the =pcomplete-here= macro doesn't get
+    compiled out of existence, which then leads to "invalid function
+    pcomplete-here" errors when you try to invoke completion using
+    =pcomplete=. If the expression is quoted as ='(lambda () ...)=,
+    the byte compiler won't touch it which allows =emacs= to recognise
+    that the expression inside the lambda is a macro and /not/ a
+    function. Alternatively, if the expression is quoted as =#'(lambda
+    () ...)=, the byte-compiler will instead compile both it /and/ its
+    body, thus annihilating the macro completely and leaving us with a
+    byte-compiled lambda wrapping some function calls. Either approach
+    will solve the issue.
+
+[fn:pcomp] or arguably the same way, but at a different time / in a
+    different context. The order of operations and evaluation
+    semantics involved in quoting/anti-quoting/macro-expansion/etc
+    during compilation and their consequences for the meaning of an
+    expression at run-time are subtle and treacherous.
 
 *** =avy= editing/navigation
 
@@ -258,13 +393,22 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       (use-package flyspell
         :diminish flyspell-prog-mode                            ;(flyspellProgMode)
         :diminish flyspell-mode
+        :config
+        ;; Delete some default bindings, to stop flyspell from eating up
+        ;; keyboard real-estate that other modes (like org) could make much
+        ;; better use of.  This needs to happen during config, since if I
+        ;; modify the map before it's loaded, the modification won't stick.
+        (unbind-key "C-c $" flyspell-mode-map)
+        (unbind-key "C-M-i" flyspell-mode-map)
+        ;; helm-flyspell overwrites this one anyway.
+        (unbind-key "C-;" flyspell-mode-map)
         :hook ((prog-mode . flyspell-prog-mode)
                (text-mode . flyspell-mode)))
 
       ;; flycheck
       (use-package flycheck
-        :hook ((prog-mode     . flycheck-mode)
-               (flycheck-mode . flycheck-cask-setup)))
+        :hook ((prog-mode     . flycheck-mode)))
+               ;(flycheck-mode . flycheck-cask-setup)))
 
       ;; pos-tip support for displaying flycheck errors
       (use-package pos-tip
@@ -290,8 +434,6 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+NAME: lit-emacs-init-delims-wc-etc-prog-mode-setup
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      (use-package rainbow-delimiters
-       ;; Toggle rainbows
-       :bind ("H-c"     . rainbow-delimiters-mode)
        :hook (prog-mode . rainbow-delimiters-mode)
        :diminish)
 

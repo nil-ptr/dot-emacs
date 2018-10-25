@@ -2,12 +2,40 @@
 #+Author: Nils Gustafsson
 #+OPTIONS: num:3 toc:nil
 
-This is the file responsible for setting up ~linum-mode~ correctly, as
-part of my [[file:init.org][init.org]] file. This is a literate =emacs lisp= file,
-written in =org-mode=.
+This is the file responsible for setting up line numbers correctly, as
+part of my init routine. This is a literate =emacs lisp= file, written
+in =org-mode=.
+
+* Emacs version
+
+  Native line numbering support was added in =emacs= 26.1, thus we
+  only want the =linum= related code in this file if we're on a
+  version less than that.
 
 
-* Linum
+  #+NAME: lit-emacs-init-emacs-version-guard
+  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle yes :noweb yes
+    ;; Use linum if emacs doesn't have line-numbers yet.
+    (eval-when-compile
+      (defmacro lit-init-linum-mk-body()
+        (if (version<  emacs-version "26.1")
+            `(progn
+              <<linum-pre-26.1>>                                       ;(preEmacs26)
+              )
+          `(message "[lit-init-linum] %s"
+                    "You've yet to write anything for v26.1+, you dummy!"))))
+    (lit-init-linum-mk-body)
+
+  #+END_SRC
+
+  For the body of [[(preEmacs26)][line (preEmacs26)]] see section [[The Solution][The Solution]] below.
+
+
+* Linum                                                         :pre.v.26:
+  :PROPERTIES:
+  :header-args: :tangle no
+  :END:
+
 
   Line numbering minor mode. See the relevant emacs documentation for details.
 
@@ -49,60 +77,78 @@ written in =org-mode=.
    we'll have implement this functionality manually. The code here is
    based in part on code I found at a now long since dissappeared url[fn:deadlink].
 
-   The idea here is to add the missing customization interface
+   The idea here is to add the [[(linumDefCustom)][missing customization]] interface
    manually during init, and to then *redefine* a function called
-   [[(redef_linum_on)][~linum-on~]], /after/ calling ~global-linum-mode~. This second part
-   seems to work most reliably, when preformed as part of ~:config~.
+   [[(linumRedef)][=linum-on=]], /after/ calling =global-linum-mode=. This second part
+   seems to work most reliably, when preformed as part of =:config=.
 
    #+NAME: lit-emacs-init-linum-defcustoms
-   #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)"
+   #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :noweb-ref linum-pre-26.1 :noweb yes
      (use-package linum
        :defer t
        :commands (global-linum-mode linum-on)
+
+       ;; Add new customisation options
+       :preface
+       <<linum-new-defcustoms>>                                     ;(linumDefCustom)
+
+       :config
        ;; Redefine linum-on to respect our new custom
        ;; variables.
-       :config
        (message "%s %s"
                 "from lit-emacs-init-linum:"
                 "overriding definition of 'linum-on'...")
-       (defun linum-on ()            ;(redef_linum_on)
-         "Activate line-numbers in the current buffer, unless this
+       <<linum-on-redef>>                                              ;(linumRedef)
+
+       :hook (after-init . (lambda () (global-linum-mode 1))))
+   #+END_SRC
+
+   The new customisation definitions look like this:
+
+   #+NAME: lit-emacs-init-linum-defcustoms
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb-ref linum-new-defcustoms
+
+     (defcustom global-linum-disabled-modes-list
+       '(eshell-mode
+         wl-summary-mode
+         compilation-mode
+         org-mode
+         text-mode
+         dired-mode
+         doc-view-mode
+         pdf-view-mode
+         haskell-interactive-mode)
+       "List of major modes where `global-linum-mode' shouldn't apply."
+       :type '(repeat (sexp :tag "Major mode"))
+       :tag "Global Linum Mode Major Mode Blacklist"
+       :group 'linum)
+
+     (defcustom global-linum-ignore-starred-buffers 't
+       "If non-nil, `global-linum-mode' will ignore starred buffers such as *Gnu Emacs*."
+       :type 'boolean
+       :tag "Global Linum Mode Ignore Starred Buffers"
+       :group 'linum)
+   #+END_SRC
+
+   And this is the overriding definition of =linum-on=:
+
+   #+NAME: lit-emacs-init-linum-on-redef
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb-ref linum-on-redef
+     (defun linum-on ()
+       "Activate line-numbers in the current buffer, unless this
      is ruled out by `global-linum-disabled-modes-list'
      `global-linum-ignore-starred-buffers'.
 
      This function overrides the default definition exported in
      linum.el"
 
-         (unless (or (minibufferp)
-                     (member major-mode global-linum-disabled-modes-list)
-                     (and global-linum-ignore-starred-buffers
-                          (string-match "*" (buffer-name))
-                          ))
-           (linum-mode 1)))
+       (unless (or (minibufferp)
+                   (member major-mode global-linum-disabled-modes-list)
+                   (and global-linum-ignore-starred-buffers
+                        (string-match "*" (buffer-name))
+                        ))
+         (linum-mode 1)))
 
-       :preface
-       ;; Define some customizable variables.
-       (defcustom global-linum-disabled-modes-list
-         '(eshell-mode
-           wl-summary-mode
-           compilation-mode
-           org-mode
-           text-mode
-           dired-mode
-           doc-view-mode
-           pdf-view-mode
-           haskell-interactive-mode)
-         "List of major modes where `global-linum-mode' shouldn't apply."
-         :type '(repeat (sexp :tag "Major mode"))
-         :tag "Global Linum Mode Major Mode Blacklist"
-         :group 'linum)
-
-       (defcustom global-linum-ignore-starred-buffers 't
-         "If non-nil, `global-linum-mode' will ignore starred buffers such as *Gnu Emacs*."
-         :type 'boolean
-         :tag "Global Linum Mode Ignore Starred Buffers"
-         :group 'linum)
-       :hook (after-init . (lambda () (global-linum-mode 1))))
    #+END_SRC
 
 
@@ -113,6 +159,47 @@ written in =org-mode=.
 =https://github.com/Khady/emacs.d/blob/master/setup-linum.el=
 
 
-* Changelog
+* Future Work
+  :PROPERTIES:
+  :header-args: :noweb no :tangle no
+  :END:
 
-  This is a local record of changes made to this file. May be inaccurate. I'm only human.
+
+** TODO Preserve line numbers when narrowing
+
+   May be able to do something with this code from a SO answer I saw:
+
+   #+BEGIN_SRC emacs-lisp :tangle no
+
+     (require 'linum)
+
+     (defvar my-linum-base-line nil)
+     (defvar my-linum-format nil)
+
+     (add-hook 'linum-before-numbering-hook
+               (lambda ()
+                 (save-excursion
+                   (save-restriction
+                     (goto-char (point-min))
+                     (widen)
+                     (setq my-linum-base-line (count-lines 1 (point)))
+                     (setq my-linum-format
+                           (format "%%%dd"
+                                   (length
+                                    (int-to-string
+                                     (+ my-linum-base-line
+                                        (count-lines (point)
+                                                     (point-max)))))))))))
+
+     (setq-default linum-format
+                   (lambda (line)
+                     (format my-linum-format
+                             (+ line my-linum-base-line))))
+
+   #+END_SRC
+
+   Got it [[https://emacs.stackexchange.com/questions/24833/preserve-original-line-numbering-for-a-narrowed-region][here]]. The link was valid [2018-10-25 tor 16:45].
+
+
+   Or maybe not.. It would be confusing, if I ever wanted to use
+   =goto-line= in a narrowed buffer.

@@ -6,6 +6,19 @@ This file responsible is for initialising my ~helm~ setup, and is
 imported in my [[file:init.org][init.org]] file. This is a literate =emacs lisp= file,
 written in =org-mode=.
 
+* Imports and Prerequisites
+
+  This file needs access to the full =use-package= package when
+  compiled.
+
+  #+NAME: lit-emacs-helm-imports
+  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+    (eval-when-compile
+      (require 'use-package))
+  #+END_SRC
+
+
+
 * Helm
 
   My incremental search and completion framework of choice.
@@ -41,6 +54,7 @@ written in =org-mode=.
      (use-package helm
        ;; Load unconditionally after 5 seconds of idle time.
        :defer 5
+       :commands (helm-mode)
        ;; Hide the helm minor mode
        :diminish (helm-mode)
        ;; Prevent spurious warnings from the byte-compiler, by telling it a

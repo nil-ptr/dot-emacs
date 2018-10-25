@@ -95,44 +95,106 @@
    "════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════")
  '(org-agenda-custom-commands
    (quote
-    ((":" . "Lists of TODO headings with specific tags.")
-     (":W" "All TODO headings marked WORK" tags-todo "WORK"
-      ((org-agenda-overriding-header "All WORK tasks")))
-     (":C" "List all TODO headings marked CHORE" tags-todo "CHORE" nil)
-     (":P" "All TODO headings marked as PERSONAL" tags-todo "PERSONAL" nil)
-     (":S" "All TODO headings marked as stubs" tags-todo "stub" nil)
-     (":s" "All stubs in all INBOX trees" tags "+INBOX&+stub" nil)
-     ("u" "Unscheduled or \"overdue\" TODO items (excluding habits)" tags-todo "-SCHEDULED>=\"<now>\"&-STYLE=\"habit\"&/!TODO|WAITING|IN-PROGRESS"
+    ((":" . "List stub headings")
+     (":s" "All headings tagged as stubs, except those with a STUB_TYPE_FLAG set to PHONY or IGNORE" tags "stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}" nil)
+     (":i" "All headings tagged with stub and INBOX, except those with a STUB_TYPE_FLAG set to PHONY or IGNORE" tags "INBOX+stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
+      ((org-agenda-overriding-header "Stubs in INBOX trees")))
+     (":S" "All headings tagged as stubs, including those normally hidden by their STUB_TYPE_FLAG property" tags "stub" nil)
+     (":t" "All active TODO headings tagged as stubs, except those with a STUB_TYPE_FLAG set to PHONY or IGNORE" tags-todo "stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
+      ((org-agenda-overriding-header "Stub TODO headings")
+       (org-agenda-skip-function
+        (quote
+         (org-agenda-skip-entry-if
+          (quote todo)
+          (quote done))))))
+     (":T" "All TODO headings tagged as stubs, including DONE and ABORTED ones, and those normally hidden by their STUB_TYPE_FLAG property" tags-todo "stub" nil)
+     (":!" "All headings with a STUB_TYPE_FLAG that aren't tagged with stub" tags "STUB_TYPE_FLAG={.+}-stub" nil)
+     ("u" "Unscheduled or \"overdue\" TODO items (excluding habits)" tags-todo "-SCHEDULED>=\"<now>\"-STYLE=\"habit\"-TODO={DONE\\|ABORTED}"
       ((org-deadline-warning-days 30)))
      (";" . "Multi block agenda views")
      (";W" "Agenda, coupled with WORK tasks and WORK stubs"
       ((agenda "" nil)
-       (tags-todo "+WORK&-SCHEDULED>=\"<now>\"&/!TODO|WAITING|IN-PROGRESS"
-                  ((org-agenda-overriding-header "Unscheduled or \"overdue\" TODO headings tagged WORK")))
-       (tags-todo "+WORK&+SCHEDULED>=\"<now>\"&/!TODO|WAITING|IN-PROGRESS"
-                  ((org-agenda-overriding-header "TODO headings marked WORK, scheduled in the future")))
-       (tags-todo "+WORK&/!GOAL"
-                  ((org-agenda-overriding-header "All GOALs tagged as WORK")))
-       (tags "+WORK&+stub"
-             ((org-agenda-overriding-header "All headings marked WORK and stub"))))
+       (tags-todo "+WORK-SCHEDULED>=\"<now>\"-STYLE=\"habit\""
+                  ((org-agenda-overriding-header "Unscheduled or \"overdue\" TODO headings tagged WORK")
+                   (org-deadline-warning-days 30)
+                   (org-agenda-skip-function
+                    (quote
+                     (org-agenda-skip-entry-if
+                      (quote todo)
+                      (quote
+                       ("GOAL" "DONE" "ABORTED")))))))
+       (tags-todo "WORK+SCHEDULED>=\"<now>\"-STYLE=\"habit\""
+                  ((org-agenda-overriding-header "TODO headings tagged as WORK, scheduled in the future")
+                   (org-agenda-skip-function
+                    (quote
+                     (org-agenda-skip-entry-if
+                      (quote todo)
+                      (quote
+                       ("GOAL" "DONE" "ABORTED")))))))
+       (tags-todo "WORK"
+                  ((org-agenda-overriding-header "All GOALs tagged as WORK")
+                   (org-agenda-skip-function
+                    (quote
+                     (org-agenda-skip-entry-if
+                      (quote nottodo)
+                      (quote
+                       ("GOAL")))))))
+       (tags "WORK+stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
+             ((org-agenda-overriding-header "All headings tagged as WORK and stub"))))
       ((org-agenda-tag-filter-preset
         (quote
-         ("-CHORE")))))
-     (";;" "Agenda, all stubs/TODOs in INBOX trees, and all unscheduled TODOs"
+         ("-CHORE")))
+       (org-agenda-skip-function
+        (quote
+         (org-agenda-skip-entry-if
+          (quote todo)
+          (quote done))))
+       (org-agenda-files
+        (quote
+         ("~/edu/proj_niclas_2018-07-05/proj.org" "~/edu/5dv180/course.org" "~/edu/5EL006/course.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/general.org")))))
+     (";;" "Full agenda, including habits, ANCHORs and stubs listings"
       ((agenda "" nil)
-       (tags "+INBOX&+stub"
+       (tags "INBOX+stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
              ((org-agenda-overriding-header "Stub entries in INBOX trees")))
-       (tags-todo "-SCHEDULED>=\"<now>\"&-STYLE=\"habit\"&/!TODO|WAITING|IN-PROGRESS"
-                  ((org-agenda-overriding-header "Unscheduled and \"overdue\" TODO headings")))
-       (tags-todo "/!GOAL"
-                  ((org-agenda-overriding-header "All GOAL headings")))
-       (tags "+ANCHOR&-SCHEDULED>=\"<now>\""
+       (tags-todo "-SCHEDULED>=\"<now>\"-STYLE=\"habit\""
+                  ((org-agenda-overriding-header "Unscheduled and \"overdue\" TODO headings")
+                   (org-agenda-skip-function
+                    (quote
+                     (org-agenda-skip-entry-if
+                      (quote todo)
+                      (quote
+                       ("GOAL" "DONE" "ABORTED")))))))
+       (todo "GOAL"
+             ((org-agenda-overriding-header "All GOAL headings")))
+       (tags "ANCHOR-SCHEDULED>=\"<now>\""
              ((org-agenda-overriding-header "Unscheduled and \"overdue\" ANCHOR headings"))))
-      nil))))
+      ((org-agenda-skip-function
+        (quote
+         (org-agenda-skip-entry-if
+          (quote todo)
+          (quote done))))))
+     (";D" "List all non-archived DONE and ABORTED headings (except habits)"
+      ((todo "DONE|ABORTED"
+             ((org-agenda-overriding-header "All DONE or ABORTED WORK tasks")
+              (org-agenda-tag-filter-preset
+               (quote
+                ("+WORK")))))
+       (todo "DONE|ABORTED"
+             ((org-agenda-overriding-header "All DONE or ABORTED non-WORK tasks")
+              (org-agenda-tag-filter-preset
+               (quote
+                ("-WORK-STYLE=\"habit\""))))))
+      ((org-agenda-skip-function
+        (quote
+         (org-agenda-skip-entry-if
+          (quote nottodo)
+          (quote done)))))))))
+ '(org-agenda-dim-blocked-tasks nil)
  '(org-agenda-files
    (quote
     ("~/edu/proj_niclas_2018-07-05/proj.org" "~/code/haskell/personal/emoric/emoric.org" "~/edu/5dv180/course.org" "~/edu/5EL006/course.org" "~/.orgfiles/gbf_stuff.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/gsons.org" "~/.orgfiles/local.org" "~/.orgfiles/general.org")))
  '(org-agenda-follow-indirect nil)
+ '(org-agenda-inhibit-startup t)
  '(org-agenda-mouse-1-follows-link nil)
  '(org-agenda-prefix-format
    (quote

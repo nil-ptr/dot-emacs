@@ -16,16 +16,58 @@ written in =org-mode=.
   thing called =org-bullets=.
 
   #+NAME: lit-emacs-init-org-bullets-setup
-  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-    ;; I'm doing this exclusively to stop the byte-compiler from
-    ;; complaining about missing symbols. Org is already loaded (lazily)
-    ;; by the time we get to this stage of the initialisation, since
-    ;; that's introduced in init.el itself.
+  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb yes
+    ;; Some scaffolding to help control and report local fixes.
     (eval-when-compile
-      (use-package org
+      (require 'org)
+      (defsubst org-version-fix-msg-named(version fixname)
+        (message "[init-org] applying '%s' for org-version %s" fixname version))
+      (defsubst org-version-fix-msg-unnamed(version)
+        (message "[init-org] applying a nameless fix for org-version %s" version))
+      (defmacro org-version-fix-msg(version &optional fixname)
+        (if fixname
+            `(org-version-fix-msg-named ,version ,fixname)
+          `(org-version-fix-msg-unnamed ,version)))
+      (defmacro when-org-version-is(short-version
+                                    &optional fixname
+                                    &rest true-forms)
+        (if (string= (org-version) short-version)
+            `(progn
+               (org-version-fix-msg ,short-version ,fixname)
+               ,@true-forms))))
+
+
+    (use-package org
         :defer t
         :defines (org-agenda-mode-map)
-        :functions (org-agenda-show)))
+        :commands(org-extract-archive-file
+                  org-all-archive-files
+                  org-at-property-p)
+        :preface
+        (when-org-version-is
+         "9.1.14"
+         "org-all-archives-fix"
+         <<org-all-archives-fix>>                            ;(Org:allArchivesFix)
+           )
+        :bind (:map org-mode-map
+               ;; Narrowing and navigation.
+               ("H-n f" . org-narrow-to-subtree)
+               ("H-n F" . org-narrow-to-defun)
+               ("H-n e" . org-narrow-to-element)
+               ("H-n b" . org-narrow-to-block)
+               ("H-C-p" . org-previous-visible-heading)
+               ("H-C-n" . org-next-visible-heading)
+               ;; Clocking
+               :map global-map
+               ("H-o c l" . org-clock-in-last)
+               ("H-o c o" . org-clock-out)
+               ("H-o c q" . org-clock-cancel)
+               ("H-o c j" . org-clock-goto) ;; Jump to currently clocked in heading
+               :map org-mode-map
+               ("H-o c i" . org-clock-in)
+               ("H-o c d" . org-clock-display)
+               :map org-src-mode-map
+               ("H-n f" . narrow-to-defun)))
 
     ;; So I won't have to keep staring at rows of asterisks.  Plus it
     ;; makes deeply nested trees (slightly) easier to deal with.
@@ -39,8 +81,64 @@ written in =org-mode=.
 
 
 
+  WRITTEN: [2018-10-26 fre 10:06]
 
-** Functions
+  Line [[(Org:allArchivesFix)]]: I had to add a fix for a bit of broken
+  code in my current =org= version. Will need to file a bug report
+  about this. See the heading [[*Fix: =org-all-archive-files= is broken in][below]] for the actual body of the fix.
+
+
+** Fix: =org-all-archive-files= is broken in 9.1.14
+
+   The mistake was due to a use of =eq= for string comparison on line
+   [[(allArchiveStringEqFix)]]. The original line is commented out just
+   above it.
+
+   #+NAME: öot-emacs-init-org-archive-all-files-fix
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no :noweb-ref org-all-archives-fix
+     ;; Copied from org-archive.el.
+     ;; Modified to use the correct string comparison function.
+     (defun my-org-all-archive-files ()
+     "Get a list of all archive files used in the current buffer.
+
+     This overrides the standard definition, to fix a mistaken use of
+     `eq' for string equality in `org-all-archive-files' in version
+     9.1.14 of `org'.  The mistake caused the function to fail to
+     recognise :ARCHIVE: org properties, and thus to ignore archive
+     files specified in such properties.
+
+     This redefinition replaces the bad `eq' call with a call to
+     `string=', which fixes the problem, and restores the expected
+     behaviour."
+     (let ((case-fold-search t)
+       files)
+       (org-with-wide-buffer
+        (goto-char (point-min))
+        (while (re-search-forward
+            "^[ \t]*\\(#\\+\\|:\\)ARCHIVE:[ \t]+\\(.*\\)"
+            nil t)
+          (when (save-match-data
+                  ;; CHANGED PART HERE
+                  ;; Was: (if (eq (match-string 1) ":") (org-at-property-p)
+                  (if (string= (match-string 1) ":") (org-at-property-p) ;(allArchiveStringEqFix)
+                  ;; END OF CHANGE
+            (eq (org-element-type (org-element-at-point)) 'keyword)))
+        (let ((file (org-extract-archive-file
+                 (match-string-no-properties 2))))
+          (when (and (org-string-nw-p file) (file-exists-p file))
+            (push file files))))))
+       (setq files (nreverse files))
+       (let ((file (org-extract-archive-file)))
+         (when (and (org-string-nw-p file) (file-exists-p file))
+       (push file files)))
+       files))
+
+     (advice-add 'org-all-archive-files
+              :override
+              #'my-org-all-archive-files)
+   #+END_SRC
+
+** Agenda Functions
 
    WRITTEN: [2018-10-17 ons 19:00]
 
@@ -54,7 +152,7 @@ written in =org-mode=.
     indirect buffers opened via an agenda view.
 
     #+NAME: lit-emacs-init-agenda-split-helpers-def
-    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no :noweb-ref org-agenda-helpers
 
       ;; Helper function for my-agenda-split-settings, defined further
       ;; down. Clears the frame of other buffers/windows before opening the
@@ -76,12 +174,12 @@ written in =org-mode=.
 
     #+END_SRC
 
-    Armed with those, I can define my custom ~agenda-show~ settings
-    hook:
+    And in addition, I
+    need one tiny hook to make =org-agenda-mode= split windows in a
+    way that I don't find deeply upsetting.
 
-    #+NAME: lig-emacs-init-agenda-agenda-split-settings-def
-    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-
+    #+NAME: lit-emacs-init-agenda-split-settings-def
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no :noweb-ref org-agenda-helpers
       ;; Adjust some agenda settings on the fly, when the mode is loaded.
       (defun my-agenda-split-settings ()
         "Set buffer-local split thresholds in agenda mode.
@@ -90,20 +188,37 @@ written in =org-mode=.
       switch to key."
         (interactive)
         (setq-local split-height-threshold nil)
-        (setq-local split-width-threshold 5)
-        (mapc (lambda (p)
-               (define-key org-agenda-mode-map (kbd (car p)) (cdr p)))
-              '(("RET"          . my-agenda-del-before-show)
-                ("<return>"     . my-agenda-del-before-show)
-                ("C-RET"        . org-agenda-goto)
-                ("<C-return>"   . org-agenda-goto)
-                ("C-M-RET"      . org-agenda-switch-to)
-                ("<C-M-return>" . org-agenda-switch-to)
-                ("<tab>"        . org-agenda-tree-to-indirect-buffer)
-                ("<backtab>"    . my-agenda-del-indirect-hack))))
+        (setq-local split-width-threshold 5))
+    #+END_SRC
+
+    Armed with those, I can define setup the agenda to my liking:
+
+    #+NAME: lig-emacs-init-agenda-agenda-split-settings-def
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb yes
+      (use-package org-agenda
+        :defer t
+
+        ;; Needed for autoloading, and making the byte-compiler happy.
+        :commands (org-agenda-show)
+
+        ;; Define helpers and hooks
+        :init
+        <<org-agenda-helpers>>
+
+        :bind (:map org-agenda-mode-map
+               ("RET"          . my-agenda-del-before-show)
+               ("<return>"     . my-agenda-del-before-show)
+               ("C-RET"        . org-agenda-goto)
+               ("<C-return>"   . org-agenda-goto)
+               ("C-M-RET"      . org-agenda-switch-to)
+               ("<C-M-return>" . org-agenda-switch-to)
+               ("<tab>"        . org-agenda-tree-to-indirect-buffer)
+               ("<backtab>"    . my-agenda-del-indirect-hack))
+
+        :hook (org-agenda-mode . my-agenda-split-settings))
 
       ;; Add the above to the agenda-mode-hook.
-      (add-hook 'org-agenda-mode-hook 'my-agenda-split-settings)
+      ;(add-hook 'org-agenda-mode-hook 'my-agenda-split-settings)
 
      #+END_SRC
 

@@ -140,22 +140,27 @@
                       (quote
                        ("GOAL")))))))
        (tags "WORK+stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
-             ((org-agenda-overriding-header "All headings tagged as WORK and stub"))))
+             ((org-agenda-overriding-header "All headings tagged as WORK and stub")
+              (org-agenda-skip-function
+               (quote
+                (org-agenda-skip-entry-if
+                 (quote todo)
+                 (quote done)))))))
       ((org-agenda-tag-filter-preset
         (quote
          ("-CHORE")))
-       (org-agenda-skip-function
-        (quote
-         (org-agenda-skip-entry-if
-          (quote todo)
-          (quote done))))
        (org-agenda-files
         (quote
-         ("~/edu/proj_niclas_2018-07-05/proj.org" "~/edu/5dv180/course.org" "~/edu/5EL006/course.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/general.org")))))
+         ("~/.orgfiles/work.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/general.org")))))
      (";;" "Full agenda, including habits, ANCHORs and stubs listings"
       ((agenda "" nil)
        (tags "INBOX+stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
-             ((org-agenda-overriding-header "Stub entries in INBOX trees")))
+             ((org-agenda-overriding-header "Stub entries in INBOX trees")
+              (org-agenda-skip-function
+               (quote
+                (org-agenda-skip-entry-if
+                 (quote todo)
+                 (quote done))))))
        (tags-todo "-SCHEDULED>=\"<now>\"-STYLE=\"habit\""
                   ((org-agenda-overriding-header "Unscheduled and \"overdue\" TODO headings")
                    (org-agenda-skip-function
@@ -168,11 +173,7 @@
              ((org-agenda-overriding-header "All GOAL headings")))
        (tags "ANCHOR-SCHEDULED>=\"<now>\""
              ((org-agenda-overriding-header "Unscheduled and \"overdue\" ANCHOR headings"))))
-      ((org-agenda-skip-function
-        (quote
-         (org-agenda-skip-entry-if
-          (quote todo)
-          (quote done))))))
+      nil)
      (";D" "List all non-archived DONE and ABORTED headings (except habits)"
       ((todo "DONE|ABORTED"
              ((org-agenda-overriding-header "All DONE or ABORTED WORK tasks")
@@ -192,7 +193,7 @@
  '(org-agenda-dim-blocked-tasks nil)
  '(org-agenda-files
    (quote
-    ("~/edu/proj_niclas_2018-07-05/proj.org" "~/code/haskell/personal/emoric/emoric.org" "~/edu/5dv180/course.org" "~/edu/5EL006/course.org" "~/.orgfiles/gbf_stuff.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/gsons.org" "~/.orgfiles/local.org" "~/.orgfiles/general.org")))
+    ("~/.orgfiles/work.org" "~/code/haskell/personal/emoric/emoric.org" "~/.orgfiles/gbf_stuff.org" "~/.orgfiles/akeexj.org" "~/.orgfiles/local.org" "~/.orgfiles/general.org")))
  '(org-agenda-follow-indirect nil)
  '(org-agenda-inhibit-startup t)
  '(org-agenda-mouse-1-follows-link nil)
@@ -205,7 +206,7 @@
      (search . " %i %-20:c%-5 e "))))
  '(org-agenda-restore-windows-after-quit t)
  '(org-agenda-skip-scheduled-if-deadline-is-shown (quote not-today))
- '(org-agenda-skip-scheduled-if-done nil)
+ '(org-agenda-skip-scheduled-if-done t)
  '(org-agenda-sorting-strategy
    (quote
     ((agenda habit-down time-up category-keep priority-down)
@@ -228,6 +229,7 @@
    "%45ITEM(Item) %TODO %3PRIORITY(Prio) %Effort(Est.){:} %CLOCKSUM(Total) %CLOCKSUM_T(Today) %12CATEGORY(Cat) %TAGS")
  '(org-crypt-disable-auto-save t)
  '(org-ctags-open-link-functions nil)
+ '(org-custom-properties (quote ("STUB_TYPE_FLAG")))
  '(org-default-priority 66)
  '(org-enforce-todo-dependencies t)
  '(org-file-apps
@@ -240,7 +242,7 @@
  '(org-habit-show-habits t)
  '(org-habit-show-habits-only-for-today t)
  '(org-highest-priority 65)
- '(org-highlight-latex-and-related (quote (latex script entities)))
+ '(org-highlight-latex-and-related (quote (latex entities)))
  '(org-id-link-to-org-use-id t)
  '(org-indirect-buffer-display (quote other-window))
  '(org-journal-date-format "%A, %Y-%m-%d")
@@ -248,6 +250,7 @@
  '(org-journal-enable-encryption t)
  '(org-journal-file-format "%Y-%m-%d")
  '(org-keep-stored-link-after-insertion t)
+ '(org-level-color-stars-only t)
  '(org-link-search-must-match-exact-headline t)
  '(org-log-done (quote note))
  '(org-log-into-drawer t)
@@ -259,6 +262,8 @@
  '(org-modules
    (quote
     (org-bbdb org-bibtex org-crypt org-ctags org-gnus org-habit org-id org-info org-irc org-mhe org-mouse org-rmail org-w3m org-bullets)))
+ '(org-pretty-entities t)
+ '(org-pretty-entities-include-sub-superscripts nil)
  '(org-refile-targets (quote ((org-agenda-files :maxlevel . 2))))
  '(org-tag-faces nil)
  '(org-tag-persistent-alist
@@ -284,6 +289,12 @@
  '(package-selected-packages
    (quote
     (ess flycheck org-wild-notifier lsp-haskell lsp-java lsp-mode lsp-rust company-glsl dhall-mode hlint-refactor org-bullets pdf-tools org-journal wgrep-helm zen-and-art-theme yatemplate yaml-mode whitespace-cleanup-mode web-mode waher-theme vagrant use-package travis totd toml-mode toml sunrise-x-tree sunrise-x-modeline sunrise-x-mirror sunrise-x-loop smex scion rust-playground rainbow-delimiters racer prodigy powerline popwin php-mode pandoc-mode pallet ox-pandoc org-pomodoro nyan-mode multiple-cursors markdown-mode magithub magit-gh-pulls magit-find-file magit-filenotify llvm-mode liquid-types kotlin-mode kanji-mode jtags java-snippets java-imports idle-highlight-mode ibuffer-projectile htmlize highlight-indentation helm-unicode helm-themes helm-projectile helm-org-rifle helm-mode-manager helm-make helm-idris helm-gtags helm-gitignore helm-git helm-flyspell helm-flycheck helm-descbinds helm-dash helm-company helm-c-yasnippet helm-ag helm-R haskell-snippets haskell-emacs-text haskell-emacs-base groovy-mode gradle-mode glsl-mode git-ps1-mode ggtags flycheck-tip flycheck-stack flycheck-pos-tip flycheck-ocaml flycheck-kotlin flycheck-hdevtools flycheck-haskell flycheck-elm flycheck-color-mode-line flycheck-cask firecode-theme expand-region exec-path-from-shell ensime encourage-mode drag-stuff d-mode company-quickhelp company-math company-ghci company-cabal company-c-headers column-enforce-mode circe cask-mode buffer-move avy-zap auto-yasnippet ample-theme 2048-game)))
+ '(pcomplete-command-completion-function
+   (lambda nil
+     (progn
+       (message "pcomplete-command-completion-function called!")
+       nil)) nil nil "I'm not sure when this gets called, so I'm adding a message here. Aside from that, it's disabled for the same reason that the pcomplete-default-completion-function is.")
+ '(pcomplete-default-completion-function (lambda nil nil) nil nil "I don't really like the default behaviour, so I'm shutting it off. Specific modes can still define pcompletion though.")
  '(powerline-height nil)
  '(powerline-text-scale-factor nil)
  '(projectile-ignored-projects (quote ("~" "~/.emacs.d")))

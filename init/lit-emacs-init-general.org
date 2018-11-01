@@ -73,7 +73,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ;; Narrowing keys. See also my org settings.
       ("H-n n"     . narrow-to-region)
       ("H-n f"     . narrow-to-defun)
-      ("H-n p"     . narrow-to-page)
+      ("H-n P"     . narrow-to-page)
       ;; Undo the narrowing.
       ("H-n w"     . widen)
       ("H-n C-g"   . widen))
@@ -92,13 +92,335 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    "Hyper" key, which is what I've reassigned capslock to. Because who
    even uses capslock?
 
-** TODO Narrowing and Pages
+** Narrowing and Pages
 
    The narrowing and page ideas in =emacs= are neat, but inserting
    form feed characters in to source code willy nilly makes me a
    little uncomfortable.
 
    So, based on the ideas in page.el, I'll implement my own substitutes.
+
+*** =my-page-sep=: Definition
+
+    First, let's define what my page separators even are:
+
+    #+NAME: lit-emacs-init-page-sep-def
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defvar my-page-sep-special-prefix nil
+        "Special prefix to be used instead of `comment-start' in `my-page-sep'.
+
+      Default value is nil, meaning no special prefix. This is the
+      right choice in most modes.
+
+      When this is non-nil it should be a string CONTAINING NO
+      LINEBREAKS, and will replace the `comment-start' as the starting
+      token for a `my-page-sep'. Setting it to a non-nil value also
+      causes the end token of `my-page-sep' to be omitted entirely.")
+
+      (eval-when-compile
+
+        (defsubst my--page-sep-trim-start(s)
+          (string-trim-left
+           (if (< 0 (- (length s)
+                       (length (string-trim-right s))))
+               s
+             (concat s " "))))
+
+        ;; For §- (section separator)
+        (defsubst my--page-sep-start-tok()
+          (cond
+           ;; Use the special prefix if it exists
+           (my-page-sep-special-prefix
+            (my--page-sep-trim-start my-page-sep-special-prefix))
+           ;; If not, use comment-start
+           (comment-start
+            (my--page-sep-trim-start comment-start))
+           ;; Use the empty string if it does not
+            (t "")))
+
+
+        (defsubst my--page-sep-end-tok()
+          ;; 1. If my-page-sep-special-prefix is non-nil, ignore this token
+          ;; completely.
+          ;;
+          ;; 2. I check for comment-start rather than comment-end here
+          ;; because I don't know how I'd even begin to interpret what it
+          ;; would mean for comment-end to be well defined when
+          ;; comment-start is not.
+          (if (and (not my-page-sep-special-prefix)
+                   comment-start)
+              (string-trim-right
+               ;; Don't use comment-end if it's the empty string
+               (if (and comment-end (not (string= comment-end "")))
+                   (if (< 0 (- (length comment-end)
+                               (length (string-trim-left comment-end))))
+                       comment-end
+                     (concat " " comment-end))
+                 ;; If comment-end is nil or "" use a backwards start-tok
+                 (reverse (my--page-sep-start-tok))))
+            ;; Return an empty string if comment-start was nil
+            ""))
+
+        (defconst my--page-sep-center-tok
+                "§ ────────── ────────── ────────── ────────── ──────────"))
+
+      (defmacro my-page-sep-length()
+        "Compute the length of the output of `my-page-sep'."
+        `(+ (length (my--page-sep-start-tok))
+            ,(length my--page-sep-center-tok)
+            (length (my--page-sep-end-tok))))
+
+      (defmacro my-page-sep()
+        "My page separator token.
+
+      See `insert-my-page-sep', `my-at-page-sep-p', `my-forward-page',
+      `my-backward-page', and `my-narrow-to-page'."
+        `(concat
+          (my--page-sep-start-tok)
+          ,my--page-sep-center-tok
+          (my--page-sep-end-tok)))
+
+    #+END_SRC
+
+    The above snippet defines the separator and it's length as a pair
+    of macros, since the exact value is going to depend on the local
+    comment syntax.
+
+    Next, I need some simple functions to insert and detect these:
+
+    #+NAME: lit-emacs-init-page-sep-defuns
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      ;; TODO: allow trailing whitespace?
+      (defun my-at-page-sep-p()
+        "Return t if the current line contains a valid page separator.
+
+      A valid page separator consists of a `comment-start' followed by
+      a space (if needed), and the string \"§ ────────── ────────── ────────── ────────── ──────────\",
+       followed by a space (if needed) and a `comment-end`, or, if
+      `comment-end' is nil/empty, a reversed `comment-start'.
+
+      If this explanation seems unclear, try invoking
+      `my-insert-page-sep' to see an actual example."
+        (save-excursion
+          (beginning-of-line)
+          (let ((sep (my-page-sep))
+                (here (point))
+                (there (progn (end-of-line) (point))))
+            ;; Evaluates to nil if there is beyond the end of the buffer, or
+            ;; the buffer-substring from here to there isn't the separator.
+            (and (> (point-max) there)
+                 (string= sep
+                          (buffer-substring here
+                                            there))))))
+      (defun my-insert-page-sep()
+        "Insert a page separator at the beginning of the current line.
+
+      Any preexisting content on the line, including the cursor, is
+      moved to the next line but is otherwise unchanged."
+        (interactive)
+        ;; Remember where we were, so we can move the point back to the same
+        ;; column
+        (let ((col (current-column)))
+          (beginning-of-line)
+          (insert (my-page-sep))
+          (newline)
+          (move-to-column col)))
+
+      (defun my-count-lines-page()
+        "Similar to `count-lines-page', but using `my-page-sep'.
+
+      Displays the total number number of lines from the start of the
+      current page up to the end of the current page. In parenthesis
+      are:
+
+      A. the number of lines from the start of the current page up to,
+      but not including, the current line.
+      B. the number one (representing the current line).
+      C. the number of lines from the line following the current one to
+      the end of the page.
+
+      In other words the lines before point and lines after point will
+      sum to 1 less than the number of lines in the page. So if the
+      point is on the 4th line of a 5 line page, the output should look
+      like this:
+
+       \"Page has 5 (3 + 1 + 1) lines\".
+
+      If the point is on a page separator, \"At page separator\" will
+      be displayed instead.
+
+      See `my-at-page-sep-p' for a simple description of what the
+      separator looks like."
+        (interactive)
+        (if (my-at-page-sep-p)
+            (message "At page separator")
+          (save-excursion
+            (let ((here (line-number-at-pos))                        ;(psepCountLines)
+                  (bot (progn
+                         (my-forward-page)
+                         (when (my-at-page-sep-p)
+                           (backward-char))
+                         (line-number-at-pos)))
+                  (top (progn
+                         (my-backward-page)
+                         (when (my-at-page-sep-p) (forward-line))
+                         (line-number-at-pos) )))
+              (message "Page has %d (%d + 1 + %d) lines"
+                       (+ (- bot top) 1)
+                       (- here top)
+                       (- bot here))))))
+
+      (bind-keys :map global-map
+                 ("H-- -" . my-insert-page-sep)
+                 ("H-- l" . my-count-lines-page))
+
+    #+END_SRC
+
+    I've elected to bind this to an available global binding, because
+    I'll probably want to use it a lot.
+
+    One thing worth noting in the above block is the use of
+    =backward-char= and =forward-line= in the [[(psepCountLines)][let binding]] in
+    =my-count-lines-page=, which is meant to exclude the page
+    separators themselves. The exact same logic is going to show up in
+    =my-narrow-to-page= in the next section, except there we also
+    employ =forward-line= to exclude the starting page separator as
+    well. Note also, that 1 is added to the "line total",
+
+*** =my-page-sep=: Navigation and Narrowing
+
+    So.. how /does/ one make use of these? By using them as anchors
+    for navigation, and narrowing.
+
+    In order to do that though, I need to define two basic primitives:
+    #+NAME: lit-emacs-init-page-sep-nav-and-narrow-prim
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (defsubst my--to-next-page-sep-forward()
+          (end-of-line)                                             ;(psepForwardEOL)
+          (search-forward (my-page-sep) nil 'move)
+          (while (not (or (eobp)
+                          (my-at-page-sep-p)))
+            (search-forward (my-page-sep) nil 'move))
+          (beginning-of-line)                                       ;(psepForwardBOL)
+          (point))
+
+        (defsubst my--to-next-page-sep-backward()
+          (search-backward (my-page-sep) nil 'move)
+          (while (not (or (bobp)
+                          (my-at-page-sep-p)))
+            (search-backward (my-page-sep) nil 'move))
+          (point)))
+    #+END_SRC
+
+    Note the use of [[(psepForwardEOL)][=end-of-line=]] and [[(psepForwardBOL)][=beginning-of-line=]]
+    here. They're needed because =search-forward= with a non-nil-non-t
+    3rd argument places the point /at the end of the match/, which is
+    not where I want to be. To be specific, the =end-of-line= bit is
+    there to compensate for the =beginning-of-line= bit which would
+    cause a "movement loop" with =search-forward= if we're already at
+    a page separator. The net result is a little bit of wasted
+    movement work, but I don't think that matters much for a function
+    that's almost exclusively going to be invoked by user input. The
+    user won't notice the delay.
+
+    =search-backward= already puts the point at the beginning of the
+    match, so the corresponding shenanigans aren't necessary there.
+
+
+    I can now define the actual user-facing "page forward" and "page
+    backward" functions. I'm following the standard nomenclature used
+    in =page.el= here: "forward-page" and "backward-page".
+
+    #+NAME: lit-emacs-init-page-sep-nav
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+      ;; mimics the forward-page function
+      (defun my-forward-page(&optional count)
+        "Move to the beginning of the first `my-page-sep' after point.
+      If no page separator is found after point, move to the end of the
+      buffer instead.
+
+      With optional argument COUNT: repeat COUNT times. A negative
+      COUNT is taken to mean \"move to the beginning of the previous\"
+      `my-page-sep' instead.
+
+      With a COUNT of 0, nothing is done.
+
+      If called interactively, COUNT may be specified as a numeric prefix."
+        (interactive "p")
+        (setq count (or count 1))
+        (if (< count 0)
+            (while (and (< count 0) (not (bobp)))
+              (setq count (1+ count))
+              (my--to-next-page-sep-backward))
+          (while (and (> count 0) (not (eobp)))
+            (setq count (1- count))
+            (my--to-next-page-sep-forward))))
+
+      ;; mimics the backward-page function
+      (defun my-backward-page(&optional count)
+        "Move to the beginning of the first `my-page-sep' before point.
+      If no page separator is found before point, move to the beginning
+      of the buffer instead.
+
+      This function is exactly identical to `my-forward-page' with a
+      negative argument."
+        (interactive "p")
+        (setq count (or count 1))
+        (my-forward-page (- count)))                                    ;(myBackPage)
+
+    #+END_SRC
+
+    Nothing all that noteworthy about these definitions, aside from
+    =my-backward-page= being pretty much just an [[(myBackPage)][alias for
+    =my-forward-page=]] with a negative argument.
+
+
+    That leaves us with only two more things to do: define a narrowing
+    function, and bind all these things to keys.
+
+    #+NAME: lit-emacs-init-page-sep-narrow
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+
+      ;; Narrowing!
+      (defun my-narrow-to-page()
+        "Like `narrow-to-page', but using `my-page-sep'.
+
+      See `my-at-page-sep-p' for a simple description of what the
+      separators look like.
+
+      Briefly: This function finds the next page separator after point,
+      then the first page separator preceding that one, and invokes
+      `narrow-to-region' to narrow the buffer to everything between
+      those two separators apart from the separators themselves."
+        (interactive)
+        (save-excursion
+          (my-forward-page)
+          (when (not (eobp))
+            ;; go back one char, to reach the end of the previous line
+            (backward-char))
+          (narrow-to-region
+           (point)
+           (progn
+             (my-backward-page)
+             (when (not (bobp))
+               ;; go to the next line (we're already at the left margin)
+               (forward-line))
+             (point)))))
+
+      ;; Bind some keys
+      (bind-keys :map global-map
+                 ;; next/prior is page up / page down
+                 ("H-<next>" . my-forward-page)
+                 ("H-<prior>" . my-backward-page)
+                 ;; Mirrors the binding for narrow-to-page.
+                 ("H-n p" . my-narrow-to-page)
+                 ;; Is consistent with "H-- -" and "H-- l" defined earlier.
+                 ("H-- n" . my-narrow-to-page))
+
+    #+END_SRC
+
 
 ** Emacs Server
 

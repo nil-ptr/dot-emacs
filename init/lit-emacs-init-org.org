@@ -67,7 +67,10 @@ written in =org-mode=.
                ("H-o c i" . org-clock-in)
                ("H-o c d" . org-clock-display)
                :map org-src-mode-map
-               ("H-n f" . narrow-to-defun)))
+               ("H-n f" . narrow-to-defun))
+        :hook (org-mode . (lambda ()
+                            (setq-local my-page-sep-special-prefix
+                                        "* COMMENT"))))
 
     ;; So I won't have to keep staring at rows of asterisks.  Plus it
     ;; makes deeply nested trees (slightly) easier to deal with.

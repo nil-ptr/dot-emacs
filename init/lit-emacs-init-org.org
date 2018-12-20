@@ -15,7 +15,7 @@ written in =org-mode=.
   symbols. The one extra package I really want is a look and feel
   thing called =org-bullets=.
 
-  #+NAME: lit-emacs-init-org-bullets-setup
+  #+NAME: lit-emacs-init-org-setup
   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb yes
     ;; Some scaffolding to help control and report local fixes.
     (eval-when-compile
@@ -42,21 +42,27 @@ written in =org-mode=.
         :defines (org-agenda-mode-map)
         :commands(org-extract-archive-file
                   org-all-archive-files
-                  org-at-property-p)
+                  org-at-property-p
+                  org-up-heading-safe)
         :preface
         (when-org-version-is
          "9.1.14"
          "org-all-archives-fix"
          <<org-all-archives-fix>>                            ;(Org:allArchivesFix)
-           )
+         )
+        :config
+        <<org-config-defuns>>                                  ;(Org:configDefuns)
         :bind (:map org-mode-map
                ;; Narrowing and navigation.
                ("H-n f" . org-narrow-to-subtree)
+               ("H-n t" . my-org-narrow-to-top-level-tree)
                ("H-n F" . org-narrow-to-defun)
                ("H-n e" . org-narrow-to-element)
                ("H-n b" . org-narrow-to-block)
                ("H-C-p" . org-previous-visible-heading)
                ("H-C-n" . org-next-visible-heading)
+               ;; Capture
+               ("H-o a" . org-capture) ;a as in "add"
                ;; Clocking
                :map global-map
                ("H-o c l" . org-clock-in-last)
@@ -90,6 +96,11 @@ written in =org-mode=.
   code in my current =org= version. Will need to file a bug report
   about this. See the heading [[*Fix: =org-all-archive-files= is broken in][below]] for the actual body of the fix.
 
+
+  WRITTEN: [2018-11-02 fre 09:03]
+
+  Line [[(Org:configDefuns)]]: I've decided to add some personalised helper
+  functions here, which I'm electing to define in a [[*Personal =org= Functions][node below]].
 
 ** Fix: =org-all-archive-files= is broken in 9.1.14
 
@@ -139,6 +150,34 @@ written in =org-mode=.
      (advice-add 'org-all-archive-files
               :override
               #'my-org-all-archive-files)
+   #+END_SRC
+
+** Personal =org= Functions
+
+   These are loaded during the =:init= or =:config= portions of the
+   =use-package= declaration for [[*Org][=org=]] above.
+
+   Firstly, I'd like a narrowing function that narrows to the current
+   top-level tree.
+
+   #+NAME: lit-emacs-init-org-config-defuns
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no :noweb-ref org-config-defuns
+     (defun my-org-narrow-to-top-level-tree(&optional parent)
+       "Widen, and narrow to the root of the current tree. If prefix
+     arg PARENT is non-nil, narrow to the parent of the current node
+     instead of the root of the tree."
+
+       (interactive "P")
+       (widen)
+       (save-excursion
+         (if (null parent)
+             ;; Return to the root
+             (while (org-up-heading-safe))
+           ;; Move to parent
+           (org-up-heading-safe))
+         ;; When we''ve arrived:
+         (org-narrow-to-subtree)))
+
    #+END_SRC
 
 ** Agenda Functions

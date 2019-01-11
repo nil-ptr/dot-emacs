@@ -43,7 +43,8 @@ written in =org-mode=.
         :commands(org-extract-archive-file
                   org-all-archive-files
                   org-at-property-p
-                  org-up-heading-safe)
+                  org-up-heading-safe
+                  org-capture)
         :preface
         (when-org-version-is
          "9.1.14"
@@ -61,14 +62,14 @@ written in =org-mode=.
                ("H-n b" . org-narrow-to-block)
                ("H-C-p" . org-previous-visible-heading)
                ("H-C-n" . org-next-visible-heading)
-               ;; Capture
-               ("H-o a" . org-capture) ;a as in "add"
                ;; Clocking
                :map global-map
                ("H-o c l" . org-clock-in-last)
                ("H-o c o" . org-clock-out)
                ("H-o c q" . org-clock-cancel)
                ("H-o c j" . org-clock-goto) ;; Jump to currently clocked in heading
+               ;; Capture
+               ("H-o a" . org-capture) ;a as in "add"
                :map org-mode-map
                ("H-o c i" . org-clock-in)
                ("H-o c d" . org-clock-display)

@@ -62,6 +62,9 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ;; Save, exit, and kill the server
       ("C-x C-M-c" . save-buffers-kill-emacs)                  ;(savebuffkillemacs)
 
+      ;; Delete the current frame.
+      ("H-q" . delete-frame)
+
       ;; Better keybinding for dabbrev-expand, as "M-\" is awkward on a
       ;; nordic keyboard.
       ("H-:"       . dabbrev-expand)

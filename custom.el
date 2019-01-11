@@ -220,6 +220,15 @@
  '(org-agenda-window-frame-fractions (quote (0.5 . 0.75)))
  '(org-agenda-window-setup (quote only-window))
  '(org-bullets-bullet-list (quote ("●" "◉" "○" "◒" "◓" "✪")))
+ '(org-capture-templates
+   (quote
+    (("s" "Stub." entry
+      (file+olp "~/.orgfiles/general.org" "Task managment tree" "Stubs")
+      "* TODO %? :stub:
+  Created: %U
+
+  %i
+  %a" :clock-resume t))))
  '(org-clock-clocktable-default-properties
    (quote
     (:maxlevel 2 :scope file :block thisweek :link t :indent t :narrow 40)))

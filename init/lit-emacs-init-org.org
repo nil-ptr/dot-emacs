@@ -327,16 +327,9 @@ written in =org-mode=.
             (my-agenda-custom-view-work arg)))
         (goto-char (point-min)))
 
-      ;; Show the work or general (depending on the day/time)
-      ;; agenda after 5 minutes.
-      (run-with-idle-timer 300 t
-                           #'(lambda()
-                               (message "show-agenda-idle-timer: displaying agenda..")
-                               (my-show-agenda-special)))
 
-
-      ;; Update visible agendas every two minutes while idle. Starts two
-      ;; minutes after the above timer would have displayed it.
+      ;; Show/Update agenda every 2 minutes after an initial period of 5
+      ;; minutes of idleness.
       (defvar my-agenda-idle-update-resume-timer nil
         "Timer for `my-agenda-idle-maybe-update' to reschedule itself, or nil.")
 
@@ -348,12 +341,16 @@ written in =org-mode=.
         (when my-agenda-idle-update-resume-timer
           (cancel-timer my-agenda-idle-update-resume-timer))
 
-        ;; Update the agenda view if it's still visible.
-        (if (get-buffer-window (current-buffer) 'visible)
-            (progn
-              (message "update-agenda-idle-timer: updating agenda..")
-              (org-agenda-redo))
-          (message "update-agenda-idle-timer: window not visible; skipping update"))
+        ;; Display agenda.
+        (let ((target-frame (car (visible-frame-list))))
+          (if (null target-frame)
+              (message "update-agenda-idle-timer: no visible frames; skipping update")
+            ;; Not sure if I need to do this, but I might as well.
+            (raise-frame target-frame)
+            (message "update-agenda-idle-timer: updating agenda..")
+            (my-show-agenda-special)
+            (when org-agenda-sticky
+              (org-agenda-redo))))
 
         ;; Don't reschedule if it's been more than 6 six hours.
         (unless (time-less-p (seconds-to-time (* 6 3600))
@@ -373,6 +370,6 @@ written in =org-mode=.
                    nil
                    #'my-agenda-idle-update)))))
 
-      ;; Starts after 5 minutes + 2 minutes.
-      (run-with-idle-timer 420 t #'my-agenda-idle-update)
+      ;; Starts after 5 minutes.
+      (run-with-idle-timer 300 t #'my-agenda-idle-update)
     #+END_SRC

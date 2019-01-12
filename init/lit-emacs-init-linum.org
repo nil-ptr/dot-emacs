@@ -78,9 +78,16 @@ in =org-mode=.
    based in part on code I found at a now long since dissappeared url[fn:deadlink].
 
    The idea here is to add the [[(linumDefCustom)][missing customization]] interface
-   manually during init, and to then *redefine* a function called
-   [[(linumRedef)][=linum-on=]], /after/ calling =global-linum-mode=. This second part
-   seems to work most reliably, when preformed as part of =:config=.
+   manually during init, and to then *override* a function called
+   =linum-on=.
+
+   [2019-01-12 lör 16:23]
+
+   This solution has become somewhat unreliable after I rewrote some
+   of the logic that loads this file. However, I've amended it by also
+   overriding the definition of =global-linum-mode=. Seems to work
+   again. Hopefully I can stop working on this work-around when I get
+   around to upgrading emacs.
 
    #+NAME: lit-emacs-init-linum-defcustoms
    #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :noweb-ref linum-pre-26.1 :noweb yes
@@ -134,20 +141,28 @@ in =org-mode=.
 
    #+NAME: lit-emacs-init-linum-on-redef
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb-ref linum-on-redef
-     (defun linum-on ()
+     (defun my-linum-on ()
        "Activate line-numbers in the current buffer, unless this
      is ruled out by `global-linum-disabled-modes-list'
      `global-linum-ignore-starred-buffers'.
 
      This function overrides the default definition exported in
      linum.el"
-
        (unless (or (minibufferp)
                    (member major-mode global-linum-disabled-modes-list)
                    (and global-linum-ignore-starred-buffers
                         (string-match "*" (buffer-name))
                         ))
          (linum-mode 1)))
+     (define-globalized-minor-mode my-global-linum-mode linum-mode my-linum-on)
+
+     (advice-add 'linum-on
+                 :override
+                 #'my-linum-on)
+
+     (advice-add 'global-linum-mode
+                 :override
+                 #'my-global-linum-mode)
 
    #+END_SRC
 

@@ -107,41 +107,58 @@
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 
 
-;; Load org
-(use-package org
-  :defer t
-  :defines (org-agenda-mode-map)
-  :commands (org-store-link
-             org-agenda-mode-map
-             org-babel-tangle-file
-             org-agenda
-             org-agenda-redo
-             org-agenda-maybe-redo
-             org-agenda-redo-all)
-  :bind (("H-o C-s" . org-store-link)
-         ("H-a"     . org-agenda)
-         ))
-
 ;;; ------------------------------ ;;;
 ;;; LITERATE INIT IMPORTS          ;;;
 ;;; ------------------------------ ;;;
 
+
 ;; My literate emacs init files are in this dir
+(defconst lit-emacs-init-dir
+    (expand-file-name "init" user-emacs-directory))
 (eval-when-compile
-  (defconst lit-emacs-init-dir
-    (expand-file-name "init" user-emacs-directory)))
+
+  (use-package my-init-macros
+    :load-path "init/elisp")
+  (use-package my-load-macros
+    :load-path "init/elisp")
+
+  (defsubst my-load-init-exp-names (names)
+    (mapcar (lambda (x)
+               (expand-file-name
+                (concat "lit-emacs-init-" x)
+                lit-emacs-init-dir))
+            names))
+
+  (defmacro my-load-init-imports (&rest names)
+    `(let* ((exp-names  (my-load-init-exp-names (list ,@names)))
+            (recomplist (my-load-check-org-elc-freshness exp-names)))
+       (if recomplist
+           (progn
 
 
-(use-package my-load-macros
-  :load-path "init/elisp")
+             ;; Tangle imports, if needed
+             (require 'ob-tangle)
+             (mapc (lambda(f)
+                     (init-say
+                      (format "Generated %s"
+                              (car (last (org-babel-tangle-file
+                                          (concat f ".org")
+                                          (concat f ".el")
+                                          "emacs-lisp"))))))
+                   recomplist)
 
-(defmacro my-load-init-imports(&rest names)
-  `(my-import-org
-    ,@(mapcar (lambda (x)
-                (expand-file-name
-                 (concat "lit-emacs-init-" x)
-                 lit-emacs-init-dir))
-              names)))
+             ;; Compile those that need it, just load those that do
+             ;; not.
+             (mapc (lambda (f)
+                     (if (member f recomplist)
+                         (init-say
+                          (format "Compiled and loaded %s"
+                                  (progn
+                                    (byte-compile-file (concat f ".el") t)
+                                    (concat f ".el"))))
+                       (load-file (concat f ".elc")))) exp-names))
+         (mapc (lambda (f) (load-file (concat f ".elc"))) exp-names)))))
+
 
 (my-load-init-imports
 

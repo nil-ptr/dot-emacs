@@ -19,7 +19,6 @@ written in =org-mode=.
   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb yes
     ;; Some scaffolding to help control and report local fixes.
     (eval-when-compile
-      (require 'org)
       (defsubst org-version-fix-msg-named(version fixname)
         (message "[init-org] applying '%s' for org-version %s" fixname version))
       (defsubst org-version-fix-msg-unnamed(version)
@@ -36,7 +35,6 @@ written in =org-mode=.
                (org-version-fix-msg ,short-version ,fixname)
                ,@true-forms))))
 
-
     (use-package org
         :defer t
         :defines (org-agenda-mode-map)
@@ -45,15 +43,18 @@ written in =org-mode=.
                   org-at-property-p
                   org-up-heading-safe
                   org-capture)
-        :preface
+        :config
         (when-org-version-is
          "9.1.14"
          "org-all-archives-fix"
          <<org-all-archives-fix>>                            ;(Org:allArchivesFix)
          )
-        :config
         <<org-config-defuns>>                                  ;(Org:configDefuns)
-        :bind (:map org-mode-map
+        :bind (:map global-map
+               ("H-a" . org-agenda)
+               ;; Generating links to things.
+               ("H-o C-s" . org-store-link)
+               :map org-mode-map
                ;; Narrowing and navigation.
                ("H-n f" . org-narrow-to-subtree)
                ("H-n t" . my-org-narrow-to-top-level-tree)
@@ -242,7 +243,8 @@ written in =org-mode=.
         :defer t
 
         ;; Needed for autoloading, and making the byte-compiler happy.
-        :commands (org-agenda-show)
+        :commands (org-agenda-show
+                   org-agenda-redo)
 
         ;; Define helpers and hooks
         :init

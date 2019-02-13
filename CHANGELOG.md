@@ -4,7 +4,90 @@ Tracks changes to my .emacs files. This is not really a "versioned"
 project per se, so I'll only bother with a single component versioning
 number.
 
-## 2 - 2018-11-1
+## 3 - 2019-02-13
+
+
+### Changed
+
+- Multiple org related dependencies in my `Cask` file have been
+  removed in favour of `org-plus-contrib`. Which is what I should have
+  depended on to begin with.
+
+- Some of the loading logic in `begin.el` has been rewritten. The new
+  variant will hopefully load org a little lazier. This also reduced
+  the number of macros from `my-load-macros.el`.
+
+  This also made the logic for actually tangling and compiling my
+  literate init files a little lazier.
+
+  Note that this removed a `use-package` import of `org` in
+  `begin.el`, which means some keybindings defined here have been
+  moved to [init/lit-emacs-init-org.org].
+
+  See also the section on removed items below, for a list of load/init
+  related macros that were deleted as a result of this change.
+
+- The idle timers that display my agenda have been changed a little
+  bit. In particular they have been made less sensitive to whether
+  there are *fully* visible frames available or not. And one of them
+  has been removed, on account of it being redundant.
+
+
+### Added
+
+- A macro called `my-load-check-org-elc-freshness` has been added to
+  `my-load-macros.el`. See the doc-string for an explanation of what
+  it is intended to do.
+
+- Added a keybinding for `delete-frame`.
+
+- Added `my-forward-narrow-page` and `my-backward-narrow-page`, which
+  work like their non-narrowed cousins, but which will widen before
+  moving and then narrow to page on arriving. Keybindings added.
+
+- Added a function called `my-org-narrow-to-top-level-tree` to
+  [init/lit-emacs-init-org.org]. Does what it says. With a prefix
+  argument, it narrows to the parent node instead. Bindings also
+  added, naturally.
+  
+- Added two `org-capture` templates, and some related keybindings.
+
+### Fixed
+
+- The `my-load-is-newer-than` and `my-load-is-older-than` macros no
+  longer refer to `my-load-file-last-modified-time`. Its definition
+  has been inlined.
+
+  This is listed under "Fixed" rather than "Changed" because the
+  nested macro invocations were causing incorrect results to be
+  reported.
+
+- The logic in [init/lit-emacs-init-linum.org] responsible for
+  preventing `global-linum-mode` from screwing up buffers that aren't
+  compatible with it broke down. Possibly due to changes in load
+  logic. This has been resolved by overriding both `linum-on` *and*
+  `global-linum-mode` using `advice-add`.
+
+
+### Removed
+
+- The `my-load-file-last-modified-time` macro from `my-load-macros.el`
+  has been removed, because it was no longer needed. The two other
+  macros that referred to it have had the relevant code inlined into
+  them.
+
+- The following macros from `my-load-macros.el` have been removed on
+  account of being unused and unneccesary after the changes to
+  `begin.el`:
+
+  - `my-load-may-compile-el-list`
+  - `my-import-el`
+  - `my-load-may-compile-load-org`
+  - `my-load-may-compile-load-org-list`
+  - `my-import-org`
+
+
+## 2 - 2018-11-01
 
 ### Changed
 
@@ -18,15 +101,15 @@ number.
   for 8 (I think it was) hours.
 
 - Some behind the scenes changes have been made to keybinding logic in
-  `lit-emacs-init-general` and to load logic in `general` and
-  `lit-emacs-init-helm`.
+  [init/lit-emacs-init-general.org] and to load logic in `general` and
+  [init/lit-emacs-init-helm.org].
 
   In particular, a couple of `flyspell` keybindings have been
   explicitly deleted, because I find them useless and they overwrite
   default bindings for far more important things in `org`.
 
-- The code blocks in `lit-emacs-init-linum` have been structurally
-  rearranged somewhat.
+- The code blocks in [init/lit-emacs-init-linum.org] have been
+  structurally rearranged somewhat.
 
 - Some keybindings for the `org-agenda-mode` map that were previously
   established via a hook, have been moved to a `:bind` clause of a
@@ -78,8 +161,9 @@ number.
   fallback against the broken defaults.
 
 - A version check for `emacs` itself has been added to
-  `lit-emacs-init-linum`, which disables `linum` if `emacs` is v26.1
-  or higher, since built in line numbering was added in that version.
+  [init/lit-emacs-init-linum.org], which disables `linum` if `emacs`
+  is v26.1 or higher, since built in line numbering was added in that
+  version.
 
 
 ### Fixed
@@ -94,8 +178,8 @@ number.
 
 - `pdf-tools` was loading a little bit too eagerly. The same trick
   displayed in the README for `use-package` is now employed in
-  `lit-emacs-init-general.org` to make `pdf-tools` load properly, but
-  not too eagerly.
+  [init/lit-emacs-init-general.org.org] to make `pdf-tools` load
+  properly, but not too eagerly.
 
 ## 1 - 2018-10-21
 
@@ -112,7 +196,7 @@ number.
   the byte-compiler happy.
 
 - Turned some list items under the "Functions" subheading of the "Org"
-  heading of [init/lit-emacs-init-org.org] into  sub-subheadings.
+  heading of [init/lit-emacs-init-org.org] into sub-subheadings.
   Easier to read, that way.
 
 - Swapped out a *really* ugly hack involving key remapping in the
@@ -180,8 +264,9 @@ number.
 
 - The "Initialisation" heading of [init/lit-emacs-init-general.org]
   has been dropped, along with the "Functions" subheading and the
-  `lit-emacs-init-load` function defined at the start of it. I
-  [stopped using](2018-10-18) that function in a previous update.
+  [init/lit-emacs-init-load.org] function defined at the start of
+  it. I [stopped using](#2018-10-18) that function in a previous
+  update.
 
   The "Additional Files To Load" section has been dropped for the same
   reason.

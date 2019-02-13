@@ -379,9 +379,8 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     =my-backward-page= being pretty much just an [[(myBackPage)][alias for
     =my-forward-page=]] with a negative argument.
 
-
-    That leaves us with only two more things to do: define a narrowing
-    function, and bind all these things to keys.
+    Having done that, we define a narrowing function using my page
+    separators.
 
     #+NAME: lit-emacs-init-page-sep-narrow
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
@@ -412,16 +411,64 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
                (forward-line))
              (point)))))
 
+    #+END_SRC
+
+
+    And versions of =my-forward-page= and =my-backward-page= that
+    widen and then narrow to the arrived at page.
+
+    #+NAME: liet-emacs-init-page-sep-narrow-nav
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my-forward-narrow-page (&optional count)
+        "Like `my-forward-page', except it narrows to the target page.
+
+      Additionally it will widen the current buffer before
+      moving, COUNT is treated the same way as it is in
+      `my-forward-page'."
+        (interactive "p")
+        (widen)
+        (setq count (or count 1))
+        (my-forward-page count)
+        (my-narrow-to-page))
+
+      (defun my-backward-narrow-page (&optional count)
+        "Like `my-backward-page' except it narrows to the target page.
+
+      Additionally it will widen the current buffer before
+      moving, COUNT is treated the same way as it is in
+      `my-backward-page'."
+        (interactive "p")
+        (widen)
+        (setq count (or count 1))
+        ;; An extra + 1 is needed here, for us to narrow to the correct
+        ;; page.
+        (my-backward-page (+ 1 count))                             ;(backwardsOffset)
+        (my-narrow-to-page))
+    #+END_SRC
+
+    A note regarding [[(backwardsOffset)]]: =my-backward-page= moves to
+    the beginning of the /current/ page, or if we're already there the
+    beginning of the page before that. But moving to the beginning of
+    the current page and re-narrowing would be unhelpful. Thus we move
+    an extra page backwards, so that it really always tries to narrow
+    to the page /before/ the current one.
+
+
+    Lastly, let's bind these things to some keys.
+
+    #+NAME: lit-emacs-init-page-sep-bind-keys
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
       ;; Bind some keys
       (bind-keys :map global-map
                  ;; next/prior is page up / page down
                  ("H-<next>" . my-forward-page)
                  ("H-<prior>" . my-backward-page)
+                 ("C-H-<next>" . my-forward-narrow-page)
+                 ("C-H-<prior>" . my-backward-narrow-page)
                  ;; Mirrors the binding for narrow-to-page.
                  ("H-n p" . my-narrow-to-page)
                  ;; Is consistent with "H-- -" and "H-- l" defined earlier.
                  ("H-- n" . my-narrow-to-page))
-
     #+END_SRC
 
 

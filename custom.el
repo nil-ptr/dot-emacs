@@ -113,16 +113,6 @@
           (quote done))))))
      (":T" "All TODO headings tagged as stubs, including DONE and ABORTED ones, and those normally hidden by their STUB_TYPE_FLAG property" tags-todo "stub" nil)
      (":!" "All headings with a STUB_TYPE_FLAG that aren't tagged with stub" tags "STUB_TYPE_FLAG={.+}-stub" nil)
-     ("u" "Unscheduled or \"overdue\" TODO items (excluding habits)" tags-todo
-      #("-SCHEDULED>=\"<now>\"-STYLE=\"habit\"-TODO={DONE\\|ABORTED}" 39 54
-        (regexp t))
-      ((org-deadline-warning-days 30)
-       (org-agenda-prefix-format
-        (quote
-         ((tags . " %i %-20:c%-5 e%l"))))
-       (org-agenda-sorting-strategy
-        (quote
-         ((tags category-keep))))))
      (";" . "Multi block agenda views")
      (";W" "Agenda, coupled with WORK tasks and WORK stubs"
       ((agenda "" nil)
@@ -332,6 +322,7 @@ workinghours mon-fri 08:00-17:00
  '(tags-revert-without-query t)
  '(tool-bar-mode nil)
  '(tooltip-mode nil)
+ '(truncate-lines t)
  '(use-file-dialog nil)
  '(whitespace-action nil)
  '(writeroom-border-width 80)

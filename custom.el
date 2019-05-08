@@ -85,8 +85,14 @@
  '(inhibit-startup-echo-area-message nil)
  '(inhibit-startup-screen t)
  '(initial-buffer-choice nil)
- '(initial-major-mode (quote fundamental-mode))
- '(initial-scratch-message "What little self-esteem I have left is coffee.
+ '(initial-major-mode (quote org-mode))
+ '(initial-scratch-message
+   "#+TITLE: Scratch
+
+* Notes
+
+  What little self-esteem I have left is coffee..
+
 ")
  '(linum-delay t)
  '(magit-log-arguments (quote ("-n256" "--graph" "--decorate")))
@@ -273,7 +279,7 @@ workinghours mon-fri 08:00-17:00
  '(package-check-signature (quote allow-unsigned))
  '(package-selected-packages
    (quote
-    (debian-el dpkg-dev-el unicode-math-input ess flycheck org-wild-notifier lsp-haskell lsp-java lsp-mode lsp-rust company-glsl dhall-mode hlint-refactor org-bullets pdf-tools org-journal wgrep-helm zen-and-art-theme yatemplate yaml-mode whitespace-cleanup-mode web-mode waher-theme vagrant use-package travis totd toml-mode toml sunrise-x-tree sunrise-x-modeline sunrise-x-mirror sunrise-x-loop smex scion rust-playground rainbow-delimiters racer prodigy powerline popwin php-mode pandoc-mode pallet ox-pandoc org-pomodoro nyan-mode multiple-cursors markdown-mode magithub magit-gh-pulls magit-find-file magit-filenotify llvm-mode liquid-types kotlin-mode kanji-mode jtags java-snippets java-imports idle-highlight-mode ibuffer-projectile htmlize highlight-indentation helm-unicode helm-themes helm-projectile helm-org-rifle helm-mode-manager helm-make helm-idris helm-gtags helm-gitignore helm-git helm-flyspell helm-flycheck helm-descbinds helm-dash helm-company helm-c-yasnippet helm-ag helm-R haskell-snippets haskell-emacs-text haskell-emacs-base groovy-mode gradle-mode glsl-mode git-ps1-mode ggtags flycheck-tip flycheck-stack flycheck-pos-tip flycheck-ocaml flycheck-kotlin flycheck-hdevtools flycheck-haskell flycheck-elm flycheck-color-mode-line flycheck-cask firecode-theme expand-region exec-path-from-shell ensime encourage-mode drag-stuff d-mode company-quickhelp company-math company-ghci company-cabal company-c-headers column-enforce-mode circe cask-mode buffer-move avy-zap auto-yasnippet ample-theme 2048-game)))
+    (matlab-mode debian-el dpkg-dev-el unicode-math-input ess flycheck org-wild-notifier lsp-haskell lsp-java lsp-mode lsp-rust company-glsl dhall-mode hlint-refactor org-bullets pdf-tools org-journal wgrep-helm zen-and-art-theme yatemplate yaml-mode whitespace-cleanup-mode web-mode waher-theme vagrant use-package travis totd toml-mode toml sunrise-x-tree sunrise-x-modeline sunrise-x-mirror sunrise-x-loop smex scion rust-playground rainbow-delimiters racer prodigy powerline popwin php-mode pandoc-mode pallet ox-pandoc org-pomodoro nyan-mode multiple-cursors markdown-mode magithub magit-gh-pulls magit-find-file magit-filenotify llvm-mode liquid-types kotlin-mode kanji-mode jtags java-snippets java-imports idle-highlight-mode ibuffer-projectile htmlize highlight-indentation helm-unicode helm-themes helm-projectile helm-org-rifle helm-mode-manager helm-make helm-idris helm-gtags helm-gitignore helm-git helm-flyspell helm-flycheck helm-descbinds helm-dash helm-company helm-c-yasnippet helm-ag helm-R haskell-snippets haskell-emacs-text haskell-emacs-base groovy-mode gradle-mode glsl-mode git-ps1-mode ggtags flycheck-tip flycheck-stack flycheck-pos-tip flycheck-ocaml flycheck-kotlin flycheck-hdevtools flycheck-haskell flycheck-elm flycheck-color-mode-line flycheck-cask firecode-theme expand-region exec-path-from-shell ensime encourage-mode drag-stuff d-mode company-quickhelp company-math company-ghci company-cabal company-c-headers column-enforce-mode circe cask-mode buffer-move avy-zap auto-yasnippet ample-theme 2048-game)))
  '(pcomplete-command-completion-function
    (lambda nil
      (progn

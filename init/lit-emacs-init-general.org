@@ -78,8 +78,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ("H-n f"     . narrow-to-defun)
       ("H-n P"     . narrow-to-page)
       ;; Undo the narrowing.
-      ("H-n w"     . widen)
-      ("H-n C-g"   . widen))
+      ("H-n w"     . widen))
 
    #+END_SRC
 

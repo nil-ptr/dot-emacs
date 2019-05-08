@@ -1,6 +1,8 @@
 #+TITLE: Main Emacs Initialisation File
 #+Author: Nils Gustafsson
 #+OPTIONS: num:3 toc:nil
+#+TAGS: { export(e) noexport(n) } { out_of_seq_keybind(O) actual_keybind_loc(A) }
+#+PROPERTY: header-args :noweb no-export :tangle yes :exports code :comments link :padline true
 
 General/misc package setup. In other words, this is where I configure
 and load packages that don't fit in any other obvious
@@ -9,20 +11,49 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
 * Imports and Prerequisites
 
-  This file needs access to the full =use-package= package when
-  compiled.
+  - I want lexical scoping here.
 
-  #+NAME: lit-emacs-general-imports
-  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-    (eval-when-compile
-      (require 'use-package))
-  #+END_SRC
+    #+NAME: lit-emacs-general-header
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :comments no
+    ;;; lit-emacs-init-general.el -*- lexical-binding: t -*-
+    ;;; Commentary:
+    ;;;
+    ;;; Generated from lit-emacs-init-general.org
+    #+END_SRC
 
-* Basic Initialisation
+  - This file needs access to the full =use-package= package when
+    compiled.
+
+    #+NAME: lit-emacs-general-imports
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (require 'use-package))
+    #+END_SRC
+
+* Basic Emacs Initialisation
 
   Some basic things I need out of the way.
 
-** Window and Buffer Keys
+** A note for readers
+
+   Some sections, such as [[*Indirect Buffers]], start with a list of key
+   bindings for functions which are really defined in various
+   locations throughout that section as a whole. These key bindings
+   are displayed first, because they provide a nice quick overview of
+   the main commands to be defined in the given section.
+
+   The /actual/ site at which such a block is typically going to end
+   up when source code is extracted from the original =org= file, is
+   at the very end of the same section of the file. Sections with out
+   of sequence key binding blocks in them are tagged with
+   ~out_of_seq_keybind~ tags. The sections where these bindings
+   /actually/ are not included when documentation is exported from
+   this =org= file, but are tagged with ~actual_keybind_loc~ (and also
+   ~noexport~) in the =org= source.
+
+
+
+** Basic Window and Buffer Keys
 
    Firstly, some window-related stuff. I need a function to split the
    frame into three side-by-side windows, because that's my preferred
@@ -35,7 +66,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
        (interactive)
        (let ((num (- 3 (count-windows))))
          (when (> num 0)
-           (dotimes (i num) (split-window-right nil))
+           (dotimes (_i num) (split-window-right nil))
            (balance-windows))))
    #+END_SRC
 
@@ -93,6 +124,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    A further note: the "H" in the keybindings above refers to the
    "Hyper" key, which is what I've reassigned capslock to. Because who
    even uses capslock?
+
 
 ** Narrowing and Pages
 
@@ -471,6 +503,282 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     #+END_SRC
 
 
+** Indirect Buffers                                      :out_of_seq_keybind:
+
+   Another interesting bit of functionality in =emacs= is the notion
+   of an indirect buffer. In this section I define some nice helpers
+   and a few hooks to make indirect buffers a little easier to make
+   and use.
+
+
+   #+HEADER: Commands defined in this section
+   #+NAME: lit-emacs-indirect-buffer-key-binds
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no
+     (bind-keys
+      :map global-map
+
+      ;; Clone the current buffer and switch to the clone.
+      ("H-b c" . my-clone-indirect-buffer-here)
+
+      ;; Kill the base buffer of the current buffer.
+      ("H-b k" . my-kill-base-buffer))
+   #+END_SRC
+
+*** Primitives
+
+    Let's start off with some low level primitives.
+
+    #+NAME: lit-emacs-indirect-buffer-compile-primitives
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (defsubst my--get-base-buffer-of-buffer (&optional buffer)
+      <<my--get-base-buffer-of-buffer-doc-string>>
+          (or (buffer-base-buffer
+               (or buffer
+                   (current-buffer)))
+              buffer))
+
+        (defsubst my--get-buffer (&optional buffer-or-name)
+      <<my--get-buffer-doc-string>>
+          (or (get-buffer
+               (or buffer-or-name
+                   (current-buffer)))
+              (error "No such buffer: %s" buffer-or-name)))
+
+        (defsubst my--get-base-buffer (&optional buffer-or-name)
+      <<my--get-base-buffer-doc-string>>
+          (my--get-base-buffer-of-buffer
+           (my--get-buffer buffer-or-name))))
+    #+END_SRC
+
+    #+NAME: my--get-base-buffer-of-buffer-doc-string
+    #+BEGIN_SRC emacs-lisp :tangle yes :exports none
+              "Returns the base buffer of BUFFER.
+
+      If BUFFER is not an indirect buffer, return BUFFER.
+
+      If BUFFER is omitted or nil, return the base buffer of the
+      current buffer.
+
+      The return value from this function is always a buffer object."
+    #+END_SRC
+
+    #+NAME: my--get-buffer-doc-string
+    #+BEGIN_SRC emacs-lisp :tangle yes :exports none
+              "Return the buffer named BUFFER-OR-NAME.
+
+      BUFFER-OR-NAME must be a string or a buffer.
+
+      If BUFFER-OR-NAME is a string and there is no buffer named
+      BUFFER-OR-NAME, raise an error.
+
+      If BUFFER-OR-NAME is a buffer, return BUFFER-OR-NAME.
+
+      If BUFFER-OR-NAME is omitted or nil, return the current buffer.
+
+      The return value from this function is always a buffer object, if
+      it returns normally."
+    #+END_SRC
+
+    #+NAME: my--get-base-buffer-doc-string
+    #+BEGIN_SRC emacs-lisp :tangle yes :exports none
+          "Return the base buffer of BUFFER-OR-NAME.
+
+      If BUFFER-OR-NAME is not an indirect buffer, return the buffer
+      corresponding to BUFFER-OR-NAME.
+
+      If BUFFER-OR-NAME is a string and there is no buffer named
+      BUFFER-OR-NAME, raise an error.
+
+      If BUFFER-OR-NAME is omitted or nil, return the base buffer of
+      the current buffer.
+
+      The return value from this function is always a buffer object, if
+      it returns normally."
+    #+END_SRC
+
+    All three of the functions above are in scope only during
+    compilation, making them useless outside of this file. They're
+    really only here to make other definitions a little easier on the
+    eyes. The documentation strings are included in the source, but
+    excluded from export, in the interest of making this code block
+    less noisy.
+
+
+    Next, we define a function that is actually useful:
+    =my-get-indirect-buffers-of=.
+
+    #+HEADER: =my-get-indirect-buffers-of=
+    #+NAME: lit-emacs-my-indirect-buffer-primitives-indirect-buffers-of
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my-get-indirect-buffers-of (&optional buffer-or-name)
+        "Return a list of all indirect buffers related to BUFFER-OR-NAME.
+
+      If BUFFER-OR-NAME is an indirect buffer, all indirect buffers
+      with the same base buffer as BUFFER-OR-NAME are returned.  This
+      includes BUFFER-OR-NAME itself.
+
+      If BUFFER-OR-NAME is not an indirect buffer, all indirect buffers
+      with base buffer BUFFER-OR-NAME are returned.
+
+      If BUFFER-OR-NAME is omitted or nil, the current buffer will be
+      used instead.
+
+      If BUFFER-OR-NAME is a string, but no buffer of that name exists,
+      raise an error."
+        (let* ((buf (my--get-buffer buffer-or-name))
+               (basebuf (my--get-base-buffer-of-buffer buf))
+               (different-base-buf-p
+                (lambda(x)
+                  (let* ((xbuf (my--get-buffer x))
+                         (xbasebuf (my--get-base-buffer-of-buffer xbuf)))
+                    ;; Exclude: 1. The base buffer itself.
+                    ;;          2. Any buffer with a different base buffer.
+                    ;; That leaves only those that are indirects with the
+                    ;; base buffer in question.
+                    (or (eq basebuf xbuf)
+                        (not (eq basebuf xbasebuf)))))))
+          (seq-remove different-base-buf-p (buffer-list))))
+    #+END_SRC
+
+    This function returns a list containing all indirect buffers that
+    share their base buffer with the given one. If called with no
+    argument, it computes the list of indirect buffers that share a
+    base buffer with the current buffer.
+
+    The resulting list will include the argument buffer if the
+    argument buffer was an indirect buffer.
+
+
+*** Creation and Destruction
+
+    Before we define a way to create indirect buffers (beyond the
+    =emacs= built-ins), let's define some convenient hooks.
+
+    #+HEADER: My Indirect Buffer Hooks
+    #+NAME: lit-emacs-my-clone-indirect-buffer-hooks
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my--living-clones-kill-buffer-query-fun ()
+        "Display a warning prompt about indirect buffers of the current buffer.
+
+      For use with `kill-buffer-query-functions'.  Should not need to
+      be called directly.  Nor should it need to be added or removed
+      manually."
+        (let ((buf (current-buffer)))
+          (or
+           (null (my-get-indirect-buffers-of buf))
+           (y-or-n-p
+            (concat "There appear to be live indirect buffers using"
+                    (format " buffer %s as a base. Really kill it?"
+                            buf))))))
+
+      (defun my--clean-up-indirect-buffer-clone-hooks-hook()
+        "Used in `my-clone-indirect-buffer-here'.
+
+      Locally deletes itself from `clone-indirect-buffer-hook', and
+      deletes `my--living-clones-kill-buffer-query-fun' from
+      `kill-buffer-query-functions' when run.
+
+      Should not need to be called or added/removed manually."
+        (remove-hook 'kill-buffer-query-functions
+                     #'my--living-clones-kill-buffer-query-fun
+                     t)
+        (remove-hook 'clone-indirect-buffer-hook
+                     #'my--clean-up-indirect-buffer-clone-hooks-hook ;(selfCleanUpHook)
+                     t))
+    #+END_SRC
+
+    The first hook adds an extra prompt to the affected buffer if that
+    buffer has any indirect buffers when the user tries to kill it.
+
+    The second hook deletes the first hook when present in a newly
+    cloned indirect buffer. And it deletes itself: note the
+    self-referentiality of line [[(selfCleanUpHook)]].
+
+    Armed with those hooks we can define =my-clone-indirect-buffer-here=.
+
+    #+HEADER: =my-clone-indirect-buffer-here=
+    #+NAME: lit-emacs-my-clone-indirect-buffer-here
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my-clone-indirect-buffer-here (newname)
+        "Clone the current buffer and then display the clone in the current window.
+
+      The new indirect buffer will be named NEWNAME, or will be
+      generated by `clone-indirect-buffer' if nil was supplied.  When
+      called interactively with a prefix argument, prompt for NEWNAME
+      using the minibuffer.  Without a prefix argument, behave as if
+      NEWNAME was nil.
+
+      The newly created buffer is displayed in the current window using
+      `switch-to-buffer'.
+
+      Returns the buffer."
+        (interactive
+         ;; logic borrowed from clone-indirect-buffer      ;(cloneBufferHereArgParse)
+         (progn
+           (if (get major-mode 'no-clone-indirect)
+               (error "Cannot indirectly clone a buffer in %s mode" mode-name))
+           (list
+            (when current-prefix-arg
+              (read-buffer "Name of new indirect buffer: " (current-buffer))))))
+
+        (let* ((newbuf (clone-indirect-buffer newname nil t))
+               (basebuf (my--get-base-buffer)))
+          (with-current-buffer basebuf
+            (add-hook 'kill-buffer-query-functions
+                      #'my--living-clones-kill-buffer-query-fun
+                      nil
+                      t)
+            (add-hook 'clone-indirect-buffer-hook
+                      #'my--clean-up-indirect-buffer-clone-hooks-hook
+                      nil
+                      t))
+          (switch-to-buffer newbuf)))
+    #+END_SRC
+
+    Some interactive argument parsing logic from
+    =clone-indirect-buffer= is duplicated [[(cloneBufferHereArgParse)][here]], but I see no great way
+    to avoid doing this. We really /do/ need to check if the current
+    major mode supports cloning before we do anything else.
+
+
+    Lastly, we need a convenient way to kill a group of clone
+    buffers. The way to do that is to kill the original one. To
+    facilitate that we define =my-kill-base-buffer=, which finds the
+    base buffer of the given buffer and calls =kill-buffer= on it.
+
+    #+HEADER: =my-kill-base-buffer=
+    #+NAME: lit-emacs-my-kill-base-buffer
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my-kill-base-buffer (&optional buffer-or-name)
+        "Kill the base buffer of BUFFER-OR-NAME.
+
+      If BUFFER-OR-NAME was omitted or is nil, the base buffer of the
+      current buffer is targeted instead.  See `buffer-base-buffer' and
+      `kill-buffer' for details on what this means.
+
+      If called interactively with a prefix argument, prompt for a
+      buffer to target using the minibuffer.
+
+      Returns t if a buffer was killed, nil otherwise."
+        (interactive
+         (list
+          (when current-prefix-arg
+            (read-buffer "Name of buffer to target: " (current-buffer) t))))
+        (kill-buffer (my--get-base-buffer buffer-or-name)))
+    #+END_SRC
+
+    Obviously, this is reduces to just =kill-buffer= when the argument
+    is not an indirect buffer. For an indirect buffer though, this
+    really will kill it, its base buffer, and its siblings.
+
+
+*** Keybindings: Indirect Buffers               :actual_keybind_loc:noexport:
+
+    #+BEGIN_SRC emacs-lisp
+    <<lit-emacs-indirect-buffer-key-binds>>
+    #+END_SRC
+
 ** Emacs Server
 
    Should be booted up if it isn't already. Unless we're in
@@ -526,8 +834,6 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       (use-package encourage-mode
         :diminish)
     #+END_SRC
-
-
 
 * Project Management
 

@@ -1,9 +1,32 @@
 #+TITLE: Template And Snippet Init
 #+Author: Nils Gustafsson
 #+OPTIONS: num:3 toc:nil
+#+TAGS: { export(e) noexport(n) } { out_of_seq_keybind(O) actual_keybind_loc(A) }
+#+PROPERTY: header-args :noweb no-export :tangle yes :exports code :comments link :padline true
 
 This file is part of my =emacs= init setup, and should be imported in
 [[file:~/.emacs.d/init.el][init.el]]. This is a literate =emacs lisp= file, written in =org-mode=.
+
+* Imports and Prerequisites
+
+  - I want lexical scoping here.
+
+    #+NAME: lit-emacs-templating-header
+    #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :comments no
+    ;;; lit-emacs-init-general.el -*- lexical-binding: t -*-
+    ;;; Commentary:
+    ;;;
+    ;;; Generated from lit-emacs-init-general.org
+    #+END_SRC
+
+  - This file needs access to the full =use-package= package when
+    compiled.
+
+    #+NAME: lit-emacs-templating-imports
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (require 'use-package))
+    #+END_SRC
 
 
 * =yasnippet=

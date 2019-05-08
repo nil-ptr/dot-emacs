@@ -14,7 +14,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
   - I want lexical scoping here.
 
     #+NAME: lit-emacs-general-header
-    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :comments no
+    #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :comments no
     ;;; lit-emacs-init-general.el -*- lexical-binding: t -*-
     ;;; Commentary:
     ;;;
@@ -35,6 +35,8 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
   Some basic things I need out of the way.
 
 ** A note for readers
+
+   WRITTEN: [2019-05-08 ons]
 
    Some sections, such as [[*Indirect Buffers]], start with a list of key
    bindings for functions which are really defined in various
@@ -504,6 +506,8 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
 
 ** Indirect Buffers                                      :out_of_seq_keybind:
+
+   WRITTEN: [2019-05-08 ons]
 
    Another interesting bit of functionality in =emacs= is the notion
    of an indirect buffer. In this section I define some nice helpers

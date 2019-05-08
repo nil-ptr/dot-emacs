@@ -1,10 +1,36 @@
 #+TITLE: Linum Setup
 #+Author: Nils Gustafsson
 #+OPTIONS: num:3 toc:nil
+#+TAGS: { export(e) noexport(n) } { out_of_seq_keybind(O) actual_keybind_loc(A) }
+#+PROPERTY: header-args :noweb no-export :tangle yes :exports code :comments link :padline true
 
 This is the file responsible for setting up line numbers correctly, as
 part of my init routine. This is a literate =emacs lisp= file, written
 in =org-mode=.
+
+
+* Imports and Prerequisites
+
+  - I want lexical scoping here.
+
+    #+NAME: lit-emacs-linum-header
+    #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :comments no
+    ;;; lit-emacs-init-general.el -*- lexical-binding: t -*-
+    ;;; Commentary:
+    ;;;
+    ;;; Generated from lit-emacs-init-general.org
+    #+END_SRC
+
+  - This file needs access to the full =use-package= package when
+    compiled.
+
+    #+NAME: lit-emacs-linum-imports
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (require 'use-package))
+    #+END_SRC
+
+
 
 * Emacs version
 
@@ -168,6 +194,12 @@ in =org-mode=.
 
 
    And that's that. Not too hard to fix, thankfully.
+
+   WRITTEN: [2019-05-08 ons 23:13]
+
+   This code continues to spew out warnings every time it is
+   recompiled. It still seems to function just fine, but I'm becoming
+   increasingly worried about the dangers of bit-rot here.
 
 
 [fn:deadlink] The (now dead) link is:

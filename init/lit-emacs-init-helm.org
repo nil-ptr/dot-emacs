@@ -1,6 +1,8 @@
 #+TITLE: Helm Setup
 #+Author: Nils Gustafsson
 #+OPTIONS: num:3 toc:nil
+#+TAGS: { export(e) noexport(n) } { out_of_seq_keybind(O) actual_keybind_loc(A) }
+#+PROPERTY: header-args :noweb no-export :tangle yes :exports code :comments link :padline true
 
 This file responsible is for initialising my ~helm~ setup, and is
 imported in my [[file:init.org][init.org]] file. This is a literate =emacs lisp= file,
@@ -8,14 +10,24 @@ written in =org-mode=.
 
 * Imports and Prerequisites
 
-  This file needs access to the full =use-package= package when
-  compiled.
+  - I want lexical scoping here.
 
-  #+NAME: lit-emacs-helm-imports
-  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-    (eval-when-compile
-      (require 'use-package))
-  #+END_SRC
+    #+NAME: lit-emacs-helm-header
+    #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :comments no
+    ;;; lit-emacs-init-general.el -*- lexical-binding: t -*-
+    ;;; Commentary:
+    ;;;
+    ;;; Generated from lit-emacs-init-general.org
+    #+END_SRC
+
+  - This file needs access to the full =use-package= package when
+    compiled.
+
+    #+NAME: lit-emacs-helm-imports
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (require 'use-package))
+    #+END_SRC
 
 
 
@@ -66,10 +78,10 @@ written in =org-mode=.
               ("C-x b"   . helm-buffers-list)
               ("<f6>"    . helm-execute-kmacro))
        :init
-       (defun my-init-completing-read-helm-advice (&rest args) ;(helmCompReadAdvice)
+       (defun my-init-completing-read-helm-advice (&rest _args);(helmCompReadAdvice)
          "Advice for `completing-read' and `read-file-name' that
           forces `helm-mode' to activate. This advice removes itself
-          from both functions when invoked."
+          from both functions when invoked. All arguments are ignored."
          (helm-mode 1)
          ;; This is neccesary, for reasons I'm not fully clear on. I guess
          ;; this function is somehow unaware of the :diminish above?

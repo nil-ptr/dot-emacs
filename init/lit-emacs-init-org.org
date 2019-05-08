@@ -1,10 +1,33 @@
 #+TITLE: Org Setup
 #+Author: Nils Gustafsson
 #+OPTIONS: num:3 toc:nil
+#+TAGS: { export(e) noexport(n) } { out_of_seq_keybind(O) actual_keybind_loc(A) }
+#+PROPERTY: header-args :noweb no-export :tangle yes :exports code :comments link :padline true
 
 This file responsible for initialising my personal =org= setup, and
 should be imported from [[file:~/.emacs.d/init.el][init.el]]. This is a literate =emacs lisp= file,
 written in =org-mode=.
+
+* Imports and Prerequisites
+
+  - I want lexical scoping here.
+
+    #+NAME: lit-emacs-org-header
+    #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :comments no
+    ;;; lit-emacs-init-general.el -*- lexical-binding: t -*-
+    ;;; Commentary:
+    ;;;
+    ;;; Generated from lit-emacs-init-general.org
+    #+END_SRC
+
+  - This file needs access to the full =use-package= package when
+    compiled.
+
+    #+NAME: lit-emacs-org-imports
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (require 'use-package))
+    #+END_SRC
 
 
 * Org
@@ -96,7 +119,8 @@ written in =org-mode=.
 
   Line [[(Org:allArchivesFix)]]: I had to add a fix for a bit of broken
   code in my current =org= version. Will need to file a bug report
-  about this. See the heading [[*Fix: =org-all-archive-files= is broken in][below]] for the actual body of the fix.
+  about this. See the heading [[*Fix: =org-all-archive-files= is broken
+  in 9.1.14]] below for the actual body of the fix.
 
 
   WRITTEN: [2018-11-02 fre 09:03]

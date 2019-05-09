@@ -60,6 +60,7 @@ written in =org-mode=.
 
     (use-package org
         :defer t
+        :ensure t
         :defines (org-agenda-mode-map)
         :commands(org-extract-archive-file
                   org-all-archive-files
@@ -109,6 +110,7 @@ written in =org-mode=.
       :defer t
       :commands org-bullets-mode
       :after org
+      :ensure t
       :hook (org-mode . (lambda () (org-bullets-mode 1))))
 
   #+END_SRC
@@ -265,6 +267,7 @@ written in =org-mode=.
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb yes
       (use-package org-agenda
         :defer t
+        :ensure org
 
         ;; Needed for autoloading, and making the byte-compiler happy.
         :commands (org-agenda-show

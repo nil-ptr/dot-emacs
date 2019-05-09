@@ -66,6 +66,7 @@ written in =org-mode=.
      (use-package helm
        ;; Load unconditionally after 5 seconds of idle time.
        :defer 5
+       :ensure t
        :commands (helm-mode)
        ;; Hide the helm minor mode
        :diminish (helm-mode)
@@ -104,11 +105,13 @@ written in =org-mode=.
      ;; Load helm-ag
      (use-package helm-ag
            :after (helm)
+           :ensure t
            :bind ("H-s" . helm-ag))
 
      ;; Load helm-org-rifle
      (use-package helm-org-rifle
        :after (helm org)
+       :ensure t
        :bind ("H-A" . helm-org-rifle-agenda-files))
 
    #+END_SRC
@@ -121,6 +124,7 @@ written in =org-mode=.
      (use-package helm-dash
        :defer t
        :after (helm)
+       :ensure t
        :bind (("H-z a"   . helm-dash-activate-docset)
               ("H-z z"   . helm-dash)
               ("H-z H-z" . helm-dash-at-point)))
@@ -145,6 +149,7 @@ written in =org-mode=.
 
        (use-package helm-flyspell
          :defer t
+         :ensure t
          :after (flyspell)
          :bind ("C-;" . helm-flyspell-correct))
 
@@ -158,6 +163,7 @@ written in =org-mode=.
 
        (use-package helm-flycheck
          :defer t
+         :ensure t
          :after (flycheck)
          :bind ("C-c ! h" . helm-flycheck))
 
@@ -175,6 +181,7 @@ written in =org-mode=.
 
        (use-package helm-projectile
          :defer t
+         :ensure t
          :commands (helm-projectile-on)
          :after (projectile)
          :init
@@ -197,6 +204,7 @@ written in =org-mode=.
 
        (use-package helm-company
          :defer t
+         :ensure t
          :after (company)
          :bind (:map company-active-map
                      ("C-:" . helm-company)))

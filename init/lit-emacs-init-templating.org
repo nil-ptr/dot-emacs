@@ -42,6 +42,7 @@ This file is part of my =emacs= init setup, and should be imported in
       ;; Load eagerly, this needs to be active, and fail fast if it's
       ;; broken. Snippets are loaded just in time, anyway.
       :demand t
+      :ensure t
       ;; Bindings copied from jweigley's dot-emacs.
       :bind (("C-c y d" . yas-load-directory)
              ("C-c y i" . yas-insert-snippet)
@@ -59,6 +60,7 @@ This file is part of my =emacs= init setup, and should be imported in
     ;; aya
     (use-package auto-yasnippet
       :defer t
+      :ensure t
       :after (yasnippet)
       :bind (("H-w" . aya-create)
              ("H-y" . aya-expand)))
@@ -66,6 +68,7 @@ This file is part of my =emacs= init setup, and should be imported in
     ;; helm source for yasnippet
     (use-package helm-c-yasnippet                             ;(helmCYasnippetLoad)
       :defer t
+      :ensure t
       :after (helm yasnippet)
       :bind ("C-c y :" . helm-yas-complete))
 
@@ -166,6 +169,7 @@ This file is part of my =emacs= init setup, and should be imported in
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      (use-package yatemplate
        :defer t
+       :ensure t
        :commands yatemplate-fill-alist
        :init
        (eval-after-load 'auto-insert

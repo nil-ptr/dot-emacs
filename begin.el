@@ -30,9 +30,20 @@
 ;;; SOME SETUP                     ;;;
 ;;; ------------------------------ ;;;
 
-(eval-and-compile
-  (require 'cask "~/.cask/cask.el")
-  (defconst this-init-bundle-thing (cask-initialize)))
+;; Ensure that these are available before proceeding.
+(use-package bind-key
+  :ensure use-package)
+(use-package diminish
+  :ensure t)
+
+;; Need an auto-load from here.
+(use-package use-package-bind-key
+  :ensure use-package)
+
+
+;; (eval-and-compile
+;;   (require 'cask "~/.cask/cask.el")
+;;   (defconst this-init-bundle-thing (cask-initialize)))
 ;(eval-when-compile (defconst this-init-bundle-thing nil))
 
 ;; Activate cask
@@ -81,14 +92,7 @@
 ;;         (init-return-cask-load-path)))
 
 
-;; Load use-package
-(eval-when-compile
-  (require 'use-package))
-(require 'diminish)
-(require 'bind-key)
 
-;; Need an auto-load from here.
-(require 'use-package-bind-key)
 
 ;(init-make-use-pkg-decls)
 
@@ -97,11 +101,13 @@
 ;  :commands (eieio--generic-static-symbol-specializers))
 
 ;; include pallet
-(require 'pallet)
-(pallet-mode t)
+;(require 'pallet)
+;(pallet-mode t)
 
 ;; Fixes a potential keyboard issue.
-(require 'iso-transl)
+(use-package iso-transl
+  :demand t
+  :ensure t)
 
 ;; set custom file name
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
@@ -111,16 +117,14 @@
 ;;; LITERATE INIT IMPORTS          ;;;
 ;;; ------------------------------ ;;;
 
+(eval-when-compile
+  (use-package my-init-macros)
+  (use-package my-load-macros))
 
 ;; My literate emacs init files are in this dir
-(defconst lit-emacs-init-dir
-    (expand-file-name "init" user-emacs-directory))
+(eval-and-compile
+  (defconst lit-emacs-init-dir (expand-file-name "init" user-emacs-directory)))
 (eval-when-compile
-
-  (use-package my-init-macros
-    :load-path "init/elisp")
-  (use-package my-load-macros
-    :load-path "init/elisp")
 
   (defsubst my-load-init-exp-names (names)
     (mapcar (lambda (x)
@@ -131,7 +135,11 @@
 
   (defmacro my-load-init-imports (&rest names)
     `(let* ((exp-names  (my-load-init-exp-names (list ,@names)))
-            (recomplist (my-load-check-org-elc-freshness exp-names)))
+            (pkg-dir-mod-time
+             (nth 5 (my--init-file-attributes package-user-dir)))
+            (recomplist
+             (my-load-check-org-elc-freshness exp-names pkg-dir-mod-time)))
+       (message "recomp %s" recomplist)
        (if recomplist
            (progn
 

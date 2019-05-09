@@ -119,6 +119,7 @@ in =org-mode=.
    #+BEGIN_SRC emacs-lisp -n -r -l ";(%s)" :noweb-ref linum-pre-26.1 :noweb yes
      (use-package linum
        :defer t
+       :ensure t
        :commands (global-linum-mode linum-on)
 
        ;; Add new customisation options

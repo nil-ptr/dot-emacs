@@ -27,7 +27,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     #+NAME: lit-emacs-general-imports
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
       (eval-when-compile
-        (require 'use-package))
+        (package-activate 'use-package))
     #+END_SRC
 
 * Basic Emacs Initialisation
@@ -75,10 +75,13 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    And here are my global keys for window/buffer movment:
 
    #+NAME: lit-emacs-init-window-keybinds
-   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no
      ;; Window/buffer manipulation
+     (eval-when-compile
+        (message "%s" load-path))
      (use-package buffer-move
        :defer t
+       :ensure t
        :bind (:map global-map
                    ("C-H-<left>"  . buf-move-left)
                    ("C-H-<right>" . buf-move-right)
@@ -809,12 +812,15 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    you might not see the prompt.
 
    #+NAME: lit-emacs-init-pdf-tools
-   #+BEGIN_SRC emacs-lisp +n
+   #+BEGIN_SRC emacs-lisp +n :tangle no
      (use-package pdf-occur
        :defer t
+       :ensure pdf-tools
+       :after pdf-tools
        :commands (pdf-occur-global-minor-mode))
      (use-package pdf-tools
        :defer t
+       :ensure t
        ;; Trick copied from the use-package README. This will load
        ;; pdf-tools just in time.
        :commands (pdf-tools-install)
@@ -833,9 +839,11 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ;; These don't do anything in non-interactive mode.
       (use-package powerline
         :defer t
+        :ensure t
         :hook (after-init . powerline-default-theme))
       ;; No real point in deferring this; it's tiny.
       (use-package encourage-mode
+        :ensure t
         :diminish)
     #+END_SRC
 
@@ -851,14 +859,18 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      (use-package magit
        :bind ("H-g" . magit-status)
+       :ensure t
        :config
        (use-package magit-commit
          :config
-         (use-package git-commit))
+         :ensure t
+         (use-package git-commit
+           :ensure t))
 
        (use-package magit-files
          :commands (global-magit-file-mode)
          :config
+         :ensure t
          (global-magit-file-mode)))
    #+END_SRC
 
@@ -870,6 +882,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      (use-package projectile
        :defer 5 ;; Load unconditionally after 5 seconds
+       :ensure t
        :config (projectile-mode +1)
        :bind-keymap ("H-p" . projectile-command-map))               ;(projectileKeymap)
    #+END_SRC
@@ -898,6 +911,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       (use-package company
         :defer 2 ;; Load unconditionally after 2 sec
         :diminish company-mode
+        :ensure t
         :commands
         (company-abort
          company-complete-number
@@ -964,6 +978,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
       (use-package pcomplete
         :defer t
+        :no-require t ; built in, I believe
         :commands (pcomplete
                    pcomplete-completions-at-point
                    pcomplete--here
@@ -1050,12 +1065,14 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ;; keyboard based "disambiguation" mode.
       (use-package avy                                                     ;(avyMode)
         :defer t
+        :ensure t
         :config (avy-setup-default)
         :bind (("C-'" . avy-goto-char-2)
                ("C-*" . avy-goto-subword-1)
                ("H-'" . avy-goto-char-in-line)))
       (use-package avy-zap
         :defer t
+        :ensure t
         :bind (("M-z" . avy-zap-up-to-char)
                ("M-Z" . avy-zap-to-char)))
     #+END_SRC
@@ -1074,6 +1091,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       (use-package flyspell
         :diminish flyspell-prog-mode                            ;(flyspellProgMode)
         :diminish flyspell-mode
+        :ensure t
         :config
         ;; Delete some default bindings, to stop flyspell from eating up
         ;; keyboard real-estate that other modes (like org) could make much
@@ -1088,14 +1106,17 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
       ;; flycheck
       (use-package flycheck
+        :ensure t
         :hook ((prog-mode     . flycheck-mode)))
                ;(flycheck-mode . flycheck-cask-setup)))
 
       ;; pos-tip support for displaying flycheck errors
       (use-package pos-tip
+        :ensure t
         :defer t)
       (use-package flycheck-pos-tip
         :diminish
+        :ensure t
         :after (flycheck)
         :hook (flycheck-mode . flycheck-pos-tip-mode))
 
@@ -1115,18 +1136,22 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+NAME: lit-emacs-init-delims-wc-etc-prog-mode-setup
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      (use-package rainbow-delimiters
+       :ensure t
        :hook (prog-mode . rainbow-delimiters-mode)
        :diminish)
 
      (use-package smartparens
+       :ensure t
        :hook (prog-mode . smartparens-mode)
        :diminish)
 
      (use-package column-enforce-mode
+       :ensure t
        :hook (prog-mode markdown-mode)
        :diminish)
 
      (use-package highlight-indentation
+       :ensure t
        :hook ((prog-mode . highlight-indentation-mode)
               (prog-mode . highlight-indentation-current-column-mode)
               (org-mode  . highlight-indentation-mode))
@@ -1134,6 +1159,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
        :diminish highlight-indentation-current-column-mode)
 
      (use-package whitespace-cleanup-mode
+       :ensure t
        :hook (prog-mode org-mode)
        :diminish)
    #+END_SRC
@@ -1154,6 +1180,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       #+NAME: lit-emacs-init-haskell-mode
       #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
         (use-package haskell-mode
+          :esnure t
           :defer t
           :config
           (mapc (lambda (x) (define-key haskell-mode-map (kbd x) nil))
@@ -1165,6 +1192,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
         (use-package flycheck-haskell
           :after (flycheck haskell-mode)
+          :ensure t
           :hook (haskell-mode . flycheck-haskell-setup))
 
       #+END_SRC
@@ -1178,7 +1206,9 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+NAME: lit-emacs-init-pandoc-mode-setup
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      (use-package markdown-mode
+       :ensure t
        :config (use-package pandoc-mode
+                 :ensure t
                  :commands pandoc-load-default-settings
                  :hook markdown-mode
                  :config (pandoc-load-default-settings)))

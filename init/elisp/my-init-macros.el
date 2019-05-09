@@ -58,10 +58,12 @@ file preforming the compilation will be ignored."
   `(expand-file-name ,name my-init-cask-pkg-dir))
 
 
-(defsubst init-say (msg)
-  (message "[%s] %s"
+(defmacro init-say (msg &rest args)
+  `(message ,(concat "[%s] " msg)
            (file-name-nondirectory load-file-name)
-           msg))
+           ,@args))
+
+
 
 
 (provide 'my-init-macros)

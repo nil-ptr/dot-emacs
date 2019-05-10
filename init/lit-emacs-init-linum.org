@@ -21,6 +21,13 @@ in =org-mode=.
     ;;; Generated from lit-emacs-init-general.org
     #+END_SRC
 
+  - I need =my-init-macros= at compile time.
+
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-when-compile
+        (require 'my-init-macros))
+    #+END_SRC
+
   - This file needs access to the full =use-package= package when
     compiled.
 
@@ -48,16 +55,107 @@ in =org-mode=.
             `(progn
               <<linum-pre-26.1>>                                       ;(preEmacs26)
               )
-          `(message "[lit-init-linum] %s"
-                    "You've yet to write anything for v26.1+, you dummy!"))))
+          `(progn
+             <<line-numbers-post-26.1>>))))                          ;(postEmacs26)
     (lit-init-linum-mk-body)
 
   #+END_SRC
 
-  For the body of [[(preEmacs26)][line (preEmacs26)]] see section [[The Solution][The Solution]] below.
+  For the body of [[(preEmacs26)][line (preEmacs26)]] see section [[The Solution][The Solution]]
+  below. The body of [[(postEmacs26)][line (postEmacs26)]] is in section [[*Display Line
+  Numbers Mode]] below.
+
+* Display Line Numbers Mode                                       :post:v:26:
+  :PROPERTIES:
+  :header-args: :tangle no
+  :END:
 
 
-* Linum                                                         :pre.v.26:
+  Activate =global-display-line-numbers=.
+
+  #+NAME: lit-emacs-init-display-line-numbers-mode
+  #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb-ref line-numbers-post-26.1 :noweb yes
+    (use-package display-line-numbers-mode
+      :no-require t ; This is a built-in.
+      :demand t     ; Don't wait, it's a built-in.
+      :commands (global-display-line-numbers-mode)
+      ;; Makes the byte-compiler happy
+      :functions (my-display-line-numbers--turn-on-advice)
+      :preface
+    <<display-line-numbers-new-defcustoms>>
+      :config
+    <<display-line-numbers--turn-on-advice>>
+      (global-display-line-numbers-mode 1))
+  #+END_SRC
+
+
+** Global mode customization
+
+   WRITTEN [2019-05-11 lör 14:11]
+
+   This was more or less copied from section [[*The Solution]] below.
+
+   #+NAME: lit-emacs-init-global-display-line-number-defcustoms
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb-ref display-line-numbers-new-defcustoms
+     (defcustom global-display-line-numbers-mode-modes-blacklist
+       '(eshell-mode
+         wl-summary-mode
+         compilation-mode
+         org-mode
+         text-mode
+         dired-mode
+         doc-view-mode
+         pdf-view-mode
+         haskell-interactive-mode)
+       "List of major modes where `global-display-line-numbers-mode'
+     shouldn't apply."
+       :type '(repeat (sexp :tag "Major mode"))
+       :tag "Global Display Line Numbers Mode Major Mode Blacklist"
+       :group 'display-line-numbers-mode)
+
+     (defcustom global-display-line-number-mode-ignore-starred-buffers 't
+       "If non-nil, `global-display-line-numbers-mode' will ignore
+     starred buffers such as *Gnu Emacs*."
+       :type 'boolean
+       :tag "Global Display Line Numbers Mode Ignore Starred Buffers"
+       :group 'display-line-numbers-mode)
+   #+END_SRC
+
+   The advice for the =turn-on= function in this case is slightly
+   different. See line [[(turnOnAdviceCondition)]], in the block below.
+
+   Main reason for the difference is because I bothered to spend some
+   time actually trying to make sense of the possible ~where~
+   arguments to =advice-add=.
+
+   #+NAME: lit-emacs-init-global-display-line-number-turn-on-advice
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb-ref display-line-numbers--turn-on-advice
+     (defun my-display-line-numbers--turn-on-advice ()
+       "Advice for `display-line-numbers--turn-on'.
+
+     If this function returns nil, `display-line-numbers--turn-on'
+     should not be called.
+
+     Adds extra checks based on
+     `global-display-line-numbers-mode-modes-blacklist' and
+     `global-display-line-numbers-mode-ignore-starred-buffers'."
+
+       (or (member major-mode
+                   global-display-line-numbers-mode-modes-blacklist)
+           (and global-display-line-number-mode-ignore-starred-buffers
+                (string-match "*" (buffer-name)))))
+
+     (init-say "Adding advice to display-line-numbers--turn-on..")
+     (advice-add 'display-line-numbers--turn-on
+                 :before-until                              ;(turnOnAdviceCondition)
+                 #'my-display-line-numbers--turn-on-advice)
+   #+END_SRC
+
+
+
+
+
+* Linum                                                            :pre_v_26:
   :PROPERTIES:
   :header-args: :tangle no
   :END:

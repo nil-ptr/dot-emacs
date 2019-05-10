@@ -60,7 +60,7 @@ written in =org-mode=.
 
     (use-package org
         :defer t
-        :ensure t
+        :ensure org-plus-contrib
         :defines (org-agenda-mode-map)
         :commands(org-extract-archive-file
                   org-all-archive-files

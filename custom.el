@@ -277,7 +277,7 @@ workinghours mon-fri 08:00-17:00
     ((type "TODO(t)" "GOAL(g@)" "WAITING(w@/!)" "IN-PROGRESS(i!/@)" "|" "ABORTED(a@)" "DONE(d!)"))))
  '(org-track-ordered-property-with-tag t)
  '(package-check-signature (quote allow-unsigned))
- '(package-selected-packages (quote (diminish use-package)))
+ '(package-selected-packages (quote (htmlize diminish use-package)))
  '(pcomplete-command-completion-function
    (lambda nil
      (progn

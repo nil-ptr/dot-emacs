@@ -230,7 +230,7 @@
  '(org-habit-show-habits-only-for-today t)
  '(org-highest-priority 65)
  '(org-highlight-latex-and-related (quote (latex entities)))
- '(org-id-link-to-org-use-id t)
+ '(org-id-link-to-org-use-id (quote create-if-interactive))
  '(org-indirect-buffer-display (quote other-window))
  '(org-journal-date-format "%A, %Y-%m-%d")
  '(org-journal-dir "~/.orgfiles/journal/")

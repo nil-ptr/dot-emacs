@@ -29,7 +29,29 @@ written in =org-mode=.
         (require 'use-package))
     #+END_SRC
 
+** Recompilation Code                                              :noexport:
 
+   This code block may be evaluated to recompile and load this
+   file. Useful to skip having to restart =emacs= to trigger
+   recompilation.
+
+   Note: This file currently has =:comments link= set. Take care if
+   =org-id-link-to-org-use-id= is set to ~t~.
+
+   #+BEGIN_SRC emacs-lisp :tangle no :exports none :noweb no :results value silent
+     (let* ((this-file-base (expand-file-name "init/lit-emacs-init-helm"
+                                              user-emacs-directory))
+            (this-file-org (concat this-file-base ".org"))
+            (this-file-el  (concat this-file-base ".el"))
+            (tangled-file
+             (car
+              (org-babel-tangle-file this-file-org
+                                     this-file-el
+                                     "emacs-lisp"))))
+       (and (byte-compile-file tangled-file t)
+            (format "Tangled, compiled, and loaded %s"
+             tangled-file)))
+   #+END_SRC
 
 * Helm
 

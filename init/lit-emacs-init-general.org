@@ -549,6 +549,9 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ;; Clone the current buffer and switch to the clone.
       ("H-b c" . my-clone-indirect-buffer-here)
 
+      ;; Switch to a different buffer with the same base buffer.
+      ("H-b b" . my-switch-to-buffer-with-base-buffer-of)
+
       ;; Kill the base buffer of the current buffer.
       ("H-b k" . my-kill-base-buffer))
    #+END_SRC
@@ -569,19 +572,27 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
         (defsubst my--get-buffer (&optional buffer-or-name)
       <<my--get-buffer-doc-string>>
-          (or (get-buffer
-               (or buffer-or-name
-                   (current-buffer)))
+          (get-buffer
+           (or buffer-or-name
+               (current-buffer))))
+
+        (defsubst my--get-buffer-or-err (&optional buffer-or-name)
+      <<my--get-buffer-or-err-doc-string>>
+          (or (my--get-buffer buffer-or-name)
               (error "No such buffer: %s" buffer-or-name)))
 
         (defsubst my--get-base-buffer (&optional buffer-or-name)
       <<my--get-base-buffer-doc-string>>
           (my--get-base-buffer-of-buffer
-           (my--get-buffer buffer-or-name))))
+           (my--get-buffer buffer-or-name)))
+
+        (defsubst my--base-buffer-is-p (base buffer)
+      <<my--base-buffer-is-p-doc-string>>
+            (eq (my--get-base-buffer buffer) base)))
     #+END_SRC
 
     #+NAME: my--get-base-buffer-of-buffer-doc-string
-    #+BEGIN_SRC emacs-lisp :tangle yes :exports none :tangle no
+    #+BEGIN_SRC emacs-lisp :exports none :tangle no
               "Returns the base buffer of BUFFER.
 
       If BUFFER is not an indirect buffer, return BUFFER.
@@ -593,7 +604,24 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     #+END_SRC
 
     #+NAME: my--get-buffer-doc-string
-    #+BEGIN_SRC emacs-lisp :tangle yes :exports none :tangle no
+    #+BEGIN_SRC emacs-lisp :exports none :tangle no
+              "Return the buffer named BUFFER-OR-NAME.
+
+      BUFFER-OR-NAME must be a string or a buffer.
+
+      If BUFFER-OR-NAME is a string and there is no buffer named
+      BUFFER-OR-NAME, return nil.
+
+      If BUFFER-OR-NAME is a buffer, return BUFFER-OR-NAME.
+
+      If BUFFER-OR-NAME is omitted or nil, return the current buffer.
+
+      This function is equivalent to `get-buffer' except the
+      BUFFER-OR-NAME argument is optional."
+    #+END_SRC
+
+    #+NAME: my--get-buffer-or-err-doc-string
+    #+BEGIN_SRC emacs-lisp :exports none :tangle no
               "Return the buffer named BUFFER-OR-NAME.
 
       BUFFER-OR-NAME must be a string or a buffer.
@@ -610,7 +638,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     #+END_SRC
 
     #+NAME: my--get-base-buffer-doc-string
-    #+BEGIN_SRC emacs-lisp :tangle yes :exports none :tangle no
+    #+BEGIN_SRC emacs-lisp :exports none :tangle no
           "Return the base buffer of BUFFER-OR-NAME.
 
       If BUFFER-OR-NAME is not an indirect buffer, return the buffer
@@ -626,58 +654,137 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       it returns normally."
     #+END_SRC
 
-    All three of the functions above are in scope only during
+    #+NAME: my--base-buffer-is-p-doc-string
+    #+BEGIN_SRC emacs-lisp :exports none :tangle no
+          "Return non-nil if BASE is the base buffer of BUFFER.
+
+      Both arguments must be actual buffers."
+    #+END_SRC
+
+
+    All four of the functions above are in scope only during
     compilation, making them useless outside of this file. They're
     really only here to make other definitions a little easier on the
     eyes. The documentation strings are included in the source, but
     excluded from export, in the interest of making this code block
     less noisy.
 
+    Next, lets define some basic helper functions.
 
-    Next, we define a function that is actually useful:
-    =my-get-indirect-buffers-of=.
+    - =my-buffer-list-with-base-buffer-of=
 
-    #+HEADER: =my-get-indirect-buffers-of=
-    #+NAME: lit-emacs-my-indirect-buffer-primitives-indirect-buffers-of
-    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-      (defun my-get-indirect-buffers-of (&optional buffer-or-name)
-        "Return a list of all indirect buffers related to BUFFER-OR-NAME.
+      Fetches all buffers that share their base buffer with the given
+      one.
 
-      If BUFFER-OR-NAME is an indirect buffer, all indirect buffers
-      with the same base buffer as BUFFER-OR-NAME are returned.  This
-      includes BUFFER-OR-NAME itself.
+      #+HEADER: =my-buffer-list-with-base-buffer-of=
+      #+NAME: lit-emacs-my-indirect-buffer-primitives-buffer-list-with-base
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (defun my-buffer-list-with-base-buffer-of (&optional buffer-or-name)
+          "Return all buffers that share their base buffer with BUFFER-OR-NAME.
 
-      If BUFFER-OR-NAME is not an indirect buffer, all indirect buffers
-      with base buffer BUFFER-OR-NAME are returned.
+        BUFFER-OR-NAME must be a string or a buffer.
 
-      If BUFFER-OR-NAME is omitted or nil, the current buffer will be
-      used instead.
+        If BUFFER-OR-NAME is omitted of nil, `current-buffer' will be
+        used instead.
 
-      If BUFFER-OR-NAME is a string, but no buffer of that name exists,
-      raise an error."
-        (let* ((buf (my--get-buffer buffer-or-name))
-               (basebuf (my--get-base-buffer-of-buffer buf))
-               (different-base-buf-p
-                (lambda(x)
-                  (let* ((xbuf (my--get-buffer x))
-                         (xbasebuf (my--get-base-buffer-of-buffer xbuf)))
-                    ;; Exclude: 1. The base buffer itself.
-                    ;;          2. Any buffer with a different base buffer.
-                    ;; That leaves only those that are indirects with the
-                    ;; base buffer in question.
-                    (or (eq basebuf xbuf)
-                        (not (eq basebuf xbasebuf)))))))
-          (seq-remove different-base-buf-p (buffer-list))))
-    #+END_SRC
+        If BUFFER-OR-NAME is a buffer, this will always return a
+        non-empty list.  BUFFER-OR-NAME is by definition one of the
+        buffers with the same base buffer as BUFFER-OR-NAME.
 
-    This function returns a list containing all indirect buffers that
-    share their base buffer with the given one. If called with no
-    argument, it computes the list of indirect buffers that share a
-    base buffer with the current buffer.
+        If BUFFER-OR-NAME is a string and a buffer by that name exists,
+        the list of buffers with the same base buffer as that buffer is
+        returned.
 
-    The resulting list will include the argument buffer if the
-    argument buffer was an indirect buffer.
+        If BUFFER-OR-NAME is a string that does not correspond to the
+        name of an existing buffer, this function returns nil."
+          (let ((buf (my--get-buffer buffer-or-name)))
+            (when buf
+              (let ((base-buf (my--get-base-buffer-of-buffer buf)))
+                (seq-filter
+                 #'(lambda(b)
+                     (let ((other-buf (my--get-buffer b)))
+                       (my--base-buffer-is-p base-buf other-buf)))
+                 (buffer-list))))))
+      #+END_SRC
 
+      This function returns a list containing all buffers that share
+      their base buffer with the given one. If called with no
+      argument, it will list all buffers that share a base buffer with
+      the current buffer.
+
+      The returned list is always non-empty: it /must/ contain the
+      argument buffer.
+
+      If the argument is a string that does not match the name of an
+      existing buffer, ~nil~ is returned.
+
+    - =my-indirect-buffer-list-with-base-buffer-of=
+
+      Fetches all /indirect/ buffers that share their base buffer with
+      the given one.
+
+      #+HEADER: =my-indirect-buffer-list-with-base-buffer-of=
+      #+NAME: lit-emacs-my-indirect-buffer-primitives-indirect-buffers-of
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (defun my-indirect-buffer-list-with-base-buffer-of (&optional buffer-or-name)
+          "Return a list of all indirect buffers related to BUFFER-OR-NAME.
+
+        BUFFER-OR-NAME must be a string or a buffer.
+
+        If BUFFER-OR-NAME is an indirect buffer, all indirect buffers
+        with the same base buffer as BUFFER-OR-NAME are returned.  This
+        includes BUFFER-OR-NAME itself.
+
+        If BUFFER-OR-NAME is not an indirect buffer, all indirect buffers
+        with base buffer BUFFER-OR-NAME are returned.  This list will be
+        nil, if there are no such indirect buffers.
+
+        If BUFFER-OR-NAME is omitted or nil, the current buffer will be
+        used instead.
+
+        If BUFFER-OR-NAME is a string that is not the name of an existing
+        buffer, return nil.
+
+        Note: Keep in mind that there are two distinct ways for this
+        function to return nil if BUFFER-OR-NAME is a string.  Do not use
+        this function carelessly as a predicate in a conditional or
+        where/unless clause."
+          (let ((buf (my--get-buffer buffer-or-name)))
+            ;; We could do something like this:
+            ;;
+            ;;(seq-remove #'(lambda (b) (eq b basebuf))
+            ;;            (my-buffer-list-with-base-buffer-of basebuf))
+            ;;
+            ;; But why traverse the list twice?
+            (when buf
+              (let ((base-buf (my--get-base-buffer-of-buffer buf)))
+                (seq-filter
+                 #'(lambda(b)
+                     (let ((other-buf (my--get-buffer b)))
+                       (and (my--base-buffer-is-p base-buf other-buf)
+                            (not (eq other-buf base-buf)))))
+                 (buffer-list))))))
+      #+END_SRC
+
+      This function returns a list containing all indirect buffers that
+      share their base buffer with the given one. If called with no
+      argument, it computes the list of indirect buffers that share a
+      base buffer with the current buffer.
+
+      The resulting list will include the argument buffer if the
+      argument buffer was an indirect buffer.
+
+      As the documentation string notes, one potential point of
+      confusion is that there are two distinct reasons why this
+      function may have returned ~nil~, given a string argument.
+
+      It could be that the string didn't match any existing buffer, or
+      it could be that the buffer existed but that the list of
+      indirect buffers based on it is ~nil~.
+
+      The ambiguity can be avoided entirely if the argument is an
+      actual buffer instead of just a name. Calling it with a ~nil~
+      argument, or no argument, is also unambiguous.
 
 *** Creation and Destruction
 
@@ -695,7 +802,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       manually."
         (let ((buf (current-buffer)))
           (or
-           (null (my-get-indirect-buffers-of buf))
+           (null (my-indirect-buffer-list-with-base-buffer-of buf))
            (y-or-n-p
             (concat "There appear to be live indirect buffers using"
                     (format " buffer %s as a base. Really kill it?"
@@ -801,6 +908,46 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     is not an indirect buffer. For an indirect buffer though, this
     really will kill it, its base buffer, and its siblings.
 
+
+*** Management
+
+    In order to make switching between indirect buffers easier, we
+    define a function specifically for that.
+
+    #+NAME: lit-emacs-my-swithc-to-buffer-with-base-buffer-of
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my-switch-to-buffer-with-base-buffer-of (&optional buffer)
+        "Prompt for a buffer sharing its base buffer with BUFFER and switch to it.
+
+      If BUFFER is omitted or nil, use the current buffer instead.
+
+      With a prefix argument, prompt for the base buffer to use.
+
+      This function is intended exclusively for interactive use."
+        (interactive
+         (list (when current-prefix-arg
+                 (read-buffer "Base buffer: " (current-buffer) t))))
+        (let ((buflist
+               (my-buffer-list-with-base-buffer-of
+                (or buffer (current-buffer)))))
+          ;; This is kind of stringly typed, but addressing that would make
+          ;; the function needlessly complex for little or no gain.
+          (switch-to-buffer                                         ;(compReadBuffer)
+           (completing-read "Switch to sibling buffer: "
+                            (seq-map #'buffer-name buflist) nil t))))
+    #+END_SRC
+
+    This is a somewhat primitive approach using completing read. But
+    that plays nice with =helm= without having to make a new source.
+
+    One thing to note here is line [[(compReadBuffer)]] where a string
+    rather than a buffer is actually passed to
+    =switch-to-buffer=. This irks me a little, but there's not much to
+    be done. I could build an alist connecting buffers and buffer
+    names, prompt for one of the keys and then fetch the actual buffer
+    from alist. But that wouldn't do a whole lot here. There's no
+    danger of the buffer not existing that wouldn't also be present if
+    I went the alist route.
 
 *** Keybindings: Indirect Buffers               :actual_keybind_loc:noexport:
 

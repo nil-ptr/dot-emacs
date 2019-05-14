@@ -679,7 +679,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       #+HEADER: =my-buffer-list-with-base-buffer-of=
       #+NAME: lit-emacs-my-indirect-buffer-primitives-buffer-list-with-base
       #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-        (defun my-buffer-list-with-base-buffer-of (&optional buffer-or-name)
+        (defun my-buffer-list-with-base-buffer-of (&optional buffer-or-name predicate)
           "Return all buffers that share their base buffer with BUFFER-OR-NAME.
 
         BUFFER-OR-NAME must be a string or a buffer.
@@ -696,14 +696,19 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
         returned.
 
         If BUFFER-OR-NAME is a string that does not correspond to the
-        name of an existing buffer, this function returns nil."
+        name of an existing buffer, this function returns nil.
+
+        In addition, an optional PREDICATE may be supplied to further
+        filter the list of buffers returned.  Buffers for which the
+        PREDICATE is non-nil will be omitted."
           (let ((buf (my--get-buffer buffer-or-name)))
             (when buf
               (let ((base-buf (my--get-base-buffer-of-buffer buf)))
                 (seq-filter
                  #'(lambda(b)
                      (let ((other-buf (my--get-buffer b)))
-                       (my--base-buffer-is-p base-buf other-buf)))
+                       (and (my--base-buffer-is-p base-buf other-buf)
+                            (if predicate (apply predicate (list other-buf)) t))))
                  (buffer-list))))))
       #+END_SRC
 
@@ -712,11 +717,11 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       argument, it will list all buffers that share a base buffer with
       the current buffer.
 
-      The returned list is always non-empty: it /must/ contain the
-      argument buffer.
+      If no ~predicate~ is supplied, then the returned list is always
+      non-empty: it /must/ contain the argument buffer.
 
-      If the argument is a string that does not match the name of an
-      existing buffer, ~nil~ is returned.
+      If the ~buffer-or-name~ argument is a string that does not match
+      the name of an existing buffer, ~nil~ is returned.
 
     - =my-indirect-buffer-list-with-base-buffer-of=
 
@@ -726,7 +731,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       #+HEADER: =my-indirect-buffer-list-with-base-buffer-of=
       #+NAME: lit-emacs-my-indirect-buffer-primitives-indirect-buffers-of
       #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-        (defun my-indirect-buffer-list-with-base-buffer-of (&optional buffer-or-name)
+        (defun my-indirect-buffer-list-with-base-buffer-of (&optional buffer-or-name predicate)
           "Return a list of all indirect buffers related to BUFFER-OR-NAME.
 
         BUFFER-OR-NAME must be a string or a buffer.
@@ -745,10 +750,15 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
         If BUFFER-OR-NAME is a string that is not the name of an existing
         buffer, return nil.
 
+        In addition, an optional PREDICATE may be supplied to further
+        filter the list of buffers returned.  Buffers for which the
+        PREDICATE is non-nil will be omitted.
+
         Note: Keep in mind that there are two distinct ways for this
-        function to return nil if BUFFER-OR-NAME is a string.  Do not use
-        this function carelessly as a predicate in a conditional or
-        where/unless clause."
+        function to return nil if BUFFER-OR-NAME is a string and
+        PREDICATE is nil.  Do not use the return value of this function
+        in if/where/unless clauses unless you're sure what that actually
+        means."
           (let ((buf (my--get-buffer buffer-or-name)))
             ;; We could do something like this:
             ;;
@@ -758,12 +768,12 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
             ;; But why traverse the list twice?
             (when buf
               (let ((base-buf (my--get-base-buffer-of-buffer buf)))
-                (seq-filter
-                 #'(lambda(b)
+                (my-buffer-list-with-base-buffer-of
+                 buf
+                 #'(lambda (b)
                      (let ((other-buf (my--get-buffer b)))
-                       (and (my--base-buffer-is-p base-buf other-buf)
-                            (not (eq other-buf base-buf)))))
-                 (buffer-list))))))
+                       (and (not (eq base-buf other-buf))
+                            (if predicate (apply predicate (list other-buf)) t)))))))))
       #+END_SRC
 
       This function returns a list containing all indirect buffers that
@@ -771,12 +781,14 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       argument, it computes the list of indirect buffers that share a
       base buffer with the current buffer.
 
-      The resulting list will include the argument buffer if the
-      argument buffer was an indirect buffer.
+      If no ~predicate~ is supplied, then the resulting list will
+      include the argument buffer if the argument buffer was an
+      indirect buffer.
 
       As the documentation string notes, one potential point of
       confusion is that there are two distinct reasons why this
-      function may have returned ~nil~, given a string argument.
+      function may have returned ~nil~, given a string argument and no
+      ~predicate~.
 
       It could be that the string didn't match any existing buffer, or
       it could be that the buffer existed but that the list of
@@ -785,6 +797,8 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       The ambiguity can be avoided entirely if the argument is an
       actual buffer instead of just a name. Calling it with a ~nil~
       argument, or no argument, is also unambiguous.
+
+      With a non-nil ~predicate~, all bets are off.
 
 *** Creation and Destruction
 
@@ -927,9 +941,11 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
         (interactive
          (list (when current-prefix-arg
                  (read-buffer "Base buffer: " (current-buffer) t))))
-        (let ((buflist
-               (my-buffer-list-with-base-buffer-of
-                (or buffer (current-buffer)))))
+        (let* ((buf (or (my--get-buffer buffer) (current-buffer)))
+               (buflist
+                (my-buffer-list-with-base-buffer-of
+                 buf
+                 #'(lambda (b)  (not (eq b buf))))))
           ;; This is kind of stringly typed, but addressing that would make
           ;; the function needlessly complex for little or no gain.
           (switch-to-buffer                                         ;(compReadBuffer)

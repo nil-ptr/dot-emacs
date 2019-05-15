@@ -552,6 +552,9 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ;; Clone the current buffer and switch to the clone.
       ("H-b c" . my-clone-indirect-buffer)
 
+      ;; Make the current view unique.
+      ("H-b u" . my-make-current-view-unique)
+
       ;; Switch to a different buffer with the same base buffer.
       ("H-b b" . my-switch-to-buffer-with-base-buffer-of)
 
@@ -1039,45 +1042,117 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
 *** Management
 
-    In order to make switching between indirect buffers easier, we
-    define a function specifically for that.
+**** Switching
 
-    #+NAME: lit-emacs-my-swithc-to-buffer-with-base-buffer-of
-    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-      (defun my-switch-to-buffer-with-base-buffer-of (&optional buffer)
-        "Prompt for a buffer sharing its base buffer with BUFFER and switch to it.
+     In order to make switching between indirect buffers easier, we
+     define a function specifically for that.
 
-      If BUFFER is omitted or nil, use the current buffer instead.
+     #+NAME: lit-emacs-my-swithc-to-buffer-with-base-buffer-of
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+       (defun my-switch-to-buffer-with-base-buffer-of (&optional buffer)
+         "Prompt for a buffer sharing its base buffer with BUFFER and switch to it.
 
-      With a prefix argument, prompt for the base buffer to use.
+       If BUFFER is omitted or nil, use the current buffer instead.
 
-      This function is intended exclusively for interactive use."
-        (interactive
-         (list (when current-prefix-arg
-                 (read-buffer "Base buffer: " (current-buffer) t))))
-        (let* ((buf (or (my--get-buffer buffer) (current-buffer)))
-               (buflist
-                (my-buffer-list-with-base-buffer-of
-                 buf
-                 #'(lambda (b)  (not (eq b buf))))))
-          ;; This is kind of stringly typed, but addressing that would make
-          ;; the function needlessly complex for little or no gain.
-          (switch-to-buffer                                         ;(compReadBuffer)
-           (completing-read "Switch to sibling buffer: "
-                            (seq-map #'buffer-name buflist) nil t))))
-    #+END_SRC
+       With a prefix argument, prompt for the base buffer to use.
 
-    This is a somewhat primitive approach using completing read. But
-    that plays nice with =helm= without having to make a new source.
+       This function is intended exclusively for interactive use."
+         (declare
+          (interactive-only
+           "Please use my-buffer-list-with-base-buffer-of directly instead"))
+         (interactive
+          (list (when current-prefix-arg
+                  (read-buffer "Base buffer: " (current-buffer) t))))
+         (let* ((buf (or (my--get-buffer buffer) (current-buffer)))
+                (buflist
+                 (my-buffer-list-with-base-buffer-of
+                  buf
+                  #'(lambda (b)  (not (eq b buf))))))
+           ;; Error if the chosen buffer disappeared while we were selecting
+           ;; it.
+           (switch-to-buffer                                         ;(compReadBuffer)
+            (my--get-buffer-or-err
+            (completing-read "Switch to sibling buffer: "
+                             (seq-map #'buffer-name buflist) nil t)))))
+     #+END_SRC
 
-    One thing to note here is line [[(compReadBuffer)]] where a string
-    rather than a buffer is actually passed to
-    =switch-to-buffer=. This irks me a little, but there's not much to
-    be done. I could build an alist connecting buffers and buffer
-    names, prompt for one of the keys and then fetch the actual buffer
-    from alist. But that wouldn't do a whole lot here. There's no
-    danger of the buffer not existing that wouldn't also be present if
-    I went the alist route.
+     This is a somewhat primitive approach using completing read. But
+     that plays nice with =helm= without having to make a new source.
+
+     One thing to note here is line [[(compReadBuffer)]] where a string
+     rather than a buffer is actually passed to
+     =switch-to-buffer=. This irks me a little, but there's not much to
+     be done. I could build an alist connecting buffers and buffer
+     names, prompt for one of the keys and then fetch the actual buffer
+     from alist. But that wouldn't do a whole lot here. There's no
+     danger of the buffer not existing that wouldn't also be present if
+     I went the alist route.
+
+**** Making a view unique
+
+     If I have the same buffer open in multiple windows in the same
+     frame, I'd like to be able to make the currently selected one
+     "unique". I mean by this, that I'd like to swap the current one
+     for a preexisting indirect clone, or create one if one does not
+     exist.
+
+     #+NAME: lit-emacs-make-current-view-unique
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+       (defun my-make-current-view-unique ()
+         "Make the buffer in the current window unique in the `selected-frame'.
+
+       For the purposes of this command, a buffer is unique in a frame
+       if there is only one visible window displaying it.  To achieve
+       its goal, this function will, if needed, try to find a not
+       currently visible buffer with the same base buffer as the current
+       buffer and switch to that one.  If multiple such buffers are
+       found, the user is queried for which one to use.  If no such
+       buffers exist, create a new one using
+       `my-clone-indirect-buffer'.
+
+       This function is intended for interactive use only.  If you want
+       something like this for non-interactive use, you're going to have
+       to call `my-buffer-list-with-base-buffer-of' and
+       `my-clone-indirect-buffer' yourself."
+         (declare
+          (interactive-only
+           (concat
+            "Please use my-clone-indirect-buffer and "
+            "my-buffer-list-with-base-buffer-of directly instead")))
+         (interactive)
+         (let* ((this-frame (selected-frame))
+                (this-buf   (my--get-buffer))
+                (windows-with-buf
+                 (get-buffer-window-list this-buf nil this-frame)))
+           (if (< 1 (length windows-with-buf))
+             (let ((candidates
+                    (my-buffer-list-with-base-buffer-of
+                     this-buf
+                     #'(lambda (b)
+                         (and (not (eq this-buf b))
+                              (= 0 (length
+                                    (get-buffer-window-list b nil this-frame))))))))
+               (cond
+                ((null candidates)
+                 (message "Cloning buffer %s.." (buffer-name this-buf))
+                 (my-clone-indirect-buffer nil 'switch t))
+                ((= 1 (length candidates))
+                 (message "Switching to sole candidate %s.."
+                          (buffer-name (car candidates)))
+                 (switch-to-buffer (car candidates) t t))
+                (t
+                 (let ((candidate
+                        ;; Raise error if the candidate buffer disappeared
+                        ;; while we were selecting it.
+                        (my--get-buffer-or-err
+                         (completing-read
+                          "Select a non-visible sibling buffer: "
+                          (seq-map #'buffer-name candidates) nil t))))
+                   (message "Switching to selected candidate %s.." candidate)
+                   (switch-to-buffer candidate t t)))))
+             (message
+              "Buffer %s is already unique in frame.." (buffer-name this-buf)))))
+     #+END_SRC
 
 *** Keybindings: Indirect Buffers               :actual_keybind_loc:noexport:
 

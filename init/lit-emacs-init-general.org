@@ -1008,7 +1008,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       indirect buffers.  This is always done when called interactively.
 
       If ECHO-KILL-COUNT is non-nil, show a message about the number of
-      buffers killed.
+      buffers killed.  This is always done when called interactively.
 
       The number of buffers killed is returned, or nil if
       BUFFER-OR-NAME does not exist."

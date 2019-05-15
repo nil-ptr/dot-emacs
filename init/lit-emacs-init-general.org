@@ -1193,6 +1193,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
      (use-package projectile
        :defer 5 ;; Load unconditionally after 5 seconds
        :ensure t
+       :commands (projectile-mode)
        :config (projectile-mode +1)
        :bind-keymap ("H-p" . projectile-command-map))               ;(projectileKeymap)
    #+END_SRC
@@ -1405,6 +1406,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       (use-package avy                                                     ;(avyMode)
         :defer t
         :ensure t
+        :commands (avy-setup-default)
         :config (avy-setup-default)
         :bind (("C-'" . avy-goto-char-2)
                ("C-*" . avy-goto-subword-1)

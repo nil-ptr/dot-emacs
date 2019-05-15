@@ -550,7 +550,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       :map global-map
 
       ;; Clone the current buffer and switch to the clone.
-      ("H-b c" . my-clone-indirect-buffer-here)
+      ("H-b c" . my-clone-indirect-buffer)
 
       ;; Switch to a different buffer with the same base buffer.
       ("H-b b" . my-switch-to-buffer-with-base-buffer-of)
@@ -774,9 +774,10 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
                 (my-buffer-list-with-base-buffer-of
                  buf
                  #'(lambda (b)
-                     (let ((other-buf (my--get-buffer b)))
-                       (and (not (eq base-buf other-buf))
-                            (if predicate (apply predicate (list other-buf)) t)))))))))
+                       (let ((other-buf (my--get-buffer b)))
+                         (and (not (eq base-buf other-buf))
+                              (if predicate
+                                  (apply predicate (list other-buf)) t)))))))))
       #+END_SRC
 
       This function returns a list containing all indirect buffers that
@@ -803,7 +804,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
       With a non-nil ~predicate~, all bets are off.
 
-*** Creation and Destruction
+*** Creation
 
     Before we define a way to create indirect buffers (beyond the
     =emacs= built-ins), let's define some convenient hooks.
@@ -826,7 +827,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
                             buf))))))
 
       (defun my--clean-up-indirect-buffer-clone-hooks-hook()
-        "Used in `my-clone-indirect-buffer-here'.
+        "Used in `my-clone-indirect-buffer'.
 
       Locally deletes itself from `clone-indirect-buffer-hook', and
       deletes `my--living-clones-kill-buffer-query-fun' from
@@ -848,12 +849,12 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     cloned indirect buffer. And it deletes itself: note the
     self-referentiality of line [[(selfCleanUpHook)]].
 
-    Armed with those hooks we can define =my-clone-indirect-buffer-here=.
+    Armed with those hooks we can define =my-clone-indirect-buffer=.
 
-    #+HEADER: =my-clone-indirect-buffer-here=
-    #+NAME: lit-emacs-my-clone-indirect-buffer-here
+    #+HEADER: =my-clone-indirect-buffer=
+    #+NAME: lit-emacs-my-clone-indirect-buffer
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
-      (defun my-clone-indirect-buffer-here (newname)
+      (defun my-clone-indirect-buffer (newname display &optional norecord)
         "Clone the current buffer and then display the clone in the current window.
 
       The new indirect buffer will be named NEWNAME, or will be
@@ -862,40 +863,94 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       using the minibuffer.  Without a prefix argument, behave as if
       NEWNAME was nil.
 
-      The newly created buffer is displayed in the current window using
-      `switch-to-buffer'.
+      If DISPLAY is 'switch, he newly created buffer is displayed in
+      the current window using `switch-to-buffer'.  This is always the
+      case when called interactively.  Any other non-nil value of
+      DISPLAY will display the buffer using `pop-to-buffer'.
 
-      Returns the buffer."
+      If NORECORD is non-nil, do not put this at the front of the list of
+      recently selected buffers.
+
+      The new buffer is returned.
+
+      This function mimics `clone-indirect-buffer', but with slightly
+      different DISPLAY related behaviour.  In addition it adds
+      `my--living-clones-kill-buffer-query-fun' and
+      `my--clean-up-indirect-buffer-clone-hooks-hook' to the
+      `kill-buffer-query-functions' and `clone-indirect-buffer-hook'
+      hook lists."
         (interactive
-         ;; logic borrowed from clone-indirect-buffer      ;(cloneBufferHereArgParse)
+         ;; logic borrowed from clone-indirect-buffer           ;(cloneBufferArgParse)
          (progn
            (if (get major-mode 'no-clone-indirect)
                (error "Cannot indirectly clone a buffer in %s mode" mode-name))
            (list
             (when current-prefix-arg
-              (read-buffer "Name of new indirect buffer: " (current-buffer))))))
-
-        (let* ((newbuf (clone-indirect-buffer newname nil t))
-               (basebuf (my--get-base-buffer)))
-          (with-current-buffer basebuf
-            (add-hook 'kill-buffer-query-functions
-                      #'my--living-clones-kill-buffer-query-fun
-                      nil
-                      t)
-            (add-hook 'clone-indirect-buffer-hook
-                      #'my--clean-up-indirect-buffer-clone-hooks-hook
-                      nil
-                      t))
-          (switch-to-buffer newbuf)))
+              (read-buffer "Name of new indirect buffer: " (current-buffer)))
+            'switch)))
+        (with-current-buffer (my--get-base-buffer)          ;(myCloneIndInstallHooks)
+          (add-hook 'kill-buffer-query-functions
+                    #'my--living-clones-kill-buffer-query-fun
+                    nil
+                    t)
+          (add-hook 'clone-indirect-buffer-hook
+                    #'my--clean-up-indirect-buffer-clone-hooks-hook
+                    nil
+                    t))
+        (let ((newbuf (clone-indirect-buffer newname nil norecord)))
+          (cond
+           ((eq display 'switch) (switch-to-buffer newbuf))
+           (display (pop-to-buffer newbuf)))
+          ;; Otherwise -> do nothing
+          newbuf))
     #+END_SRC
 
     Some interactive argument parsing logic from
-    =clone-indirect-buffer= is duplicated [[(cloneBufferHereArgParse)][here]], but I see no great way
+    =clone-indirect-buffer= is duplicated [[(cloneBufferArgParse)][here]], but I see no great way
     to avoid doing this. We really /do/ need to check if the current
     major mode supports cloning before we do anything else.
 
 
-    Lastly, we need a convenient way to kill a group of clone
+    Lastly, lets add advice to =clone-indirect-buffer= and
+    =clone-indirect-buffer-other-window= to setup the same hooks used
+    in the function above.
+
+    #+NAME: lit-emacs-clone-indirect-buffer-advice
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my--before-clone-indirect-advice(&rest ignored)
+        "Advice to run before `clone-indirect-buffer'.
+
+      Will also affect `clone-indirect-buffer-other-window', since it
+      calls `clone-indirect-buffer'.
+
+      All arguments are IGNORED.
+
+      Adds `my--living-clones-kill-buffer-query-fun' and
+      `my--clean-up-indirect-buffer-clone-hooks-hook' to the
+      `kill-buffer-query-functions' and `clone-indirect-buffer-hook'
+      hook lists of the base buffer of the current buffer."
+        (with-current-buffer (my--get-base-buffer)
+          (add-hook 'kill-buffer-query-functions
+                    #'my--living-clones-kill-buffer-query-fun
+                    nil
+                    t)
+          (add-hook 'clone-indirect-buffer-hook
+                    #'my--clean-up-indirect-buffer-clone-hooks-hook
+                    nil
+                    t)))
+      ;; Add the advice.
+      (advice-add 'clone-indirect-buffer
+                  :before
+                  #'my--before-clone-indirect-advice)
+    #+END_SRC
+
+    This renders [[(myCloneIndInstallHooks)][the corresponding block]] in =my-clone-indirect-buffer=
+    redundant, but it's nice to have it there too, in case the advice
+    needs to be switched off for whatever reason.
+
+*** Destruction
+
+    We need a convenient way to kill a group of clone
     buffers. The way to do that is to kill the original one. To
     facilitate that we define =my-kill-base-buffer=, which finds the
     base buffer of the given buffer and calls =kill-buffer= on it.

@@ -556,7 +556,10 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       ("H-b b" . my-switch-to-buffer-with-base-buffer-of)
 
       ;; Kill the base buffer of the current buffer.
-      ("H-b k" . my-kill-base-buffer))
+      ("H-b K" . my-kill-base-buffer)
+      ;; Switch to the base of the current buffer and kill all indirect
+      ;; buffers.
+      ("H-b k" . my-kill-indirect-buffers-of))
    #+END_SRC
 
 *** Primitives
@@ -979,6 +982,59 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     Obviously, this is reduces to just =kill-buffer= when the argument
     is not an indirect buffer. For an indirect buffer though, this
     really will kill it, its base buffer, and its siblings.
+
+
+    Sometimes it's useful to be able to kill off indirect clones but not the base buffer.
+
+    #+HEADER: =my-kill-indirect-buffers-of=
+    #+NAME: lit-emace-my-kill-indirect-buffers-of
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (defun my-kill-indirect-buffers-of (&optional buffer-or-name
+                                                    switch-to-base
+                                                    echo-kill-count)
+        "Kill all indirect buffers with the same base buffer as BUFFER-OR-NAME.
+
+      BUFFER-OR-NAME must be a buffer, a string or nil.
+
+      If BUFFER-OR-NAME is nil, the current buffer is used instead.  If
+      called with interactively with a prefix argument, prompt the user
+      for a buffer to target instead of the current buffer.
+
+      If BUFFER-OR-NAME is a string that is not the name of an existing
+      buffer, do nothing and return nil.
+
+      If SWITCH-TO-BASE is non-nil, switch to the base buffer of
+      BUFFER-OR-NAME using `switch-to-buffer' before killing the
+      indirect buffers.  This is always done when called interactively.
+
+      If ECHO-KILL-COUNT is non-nil, show a message about the number of
+      buffers killed.
+
+      The number of buffers killed is returned, or nil if
+      BUFFER-OR-NAME does not exist."
+        (interactive
+         (list
+          (when current-prefix-arg
+            (read-buffer "Name of buffer to target: " (current-buffer) t))
+          t
+          t))
+        (let* ((basebuf (my--get-base-buffer buffer-or-name))
+               (targetlist (my-indirect-buffer-list-with-base-buffer-of basebuf))
+               (numtargets (length targetlist)))
+          (if (not basebuf) nil
+            (when switch-to-base (switch-to-buffer basebuf nil t))
+            (let ((numkilled (seq-reduce
+                              #'(lambda(acc val)
+                                  (if (kill-buffer val)
+                                      (+ 1 acc)
+                                    acc))
+                              targetlist 0)))
+              (when echo-kill-count
+                (message "Killed %d indirect buffers (out of %d)"
+                         numkilled
+                         numtargets))
+              numkilled))))
+    #+END_SRC
 
 
 *** Management

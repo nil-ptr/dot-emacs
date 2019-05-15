@@ -43,11 +43,14 @@ written in =org-mode=.
                                               user-emacs-directory))
             (this-file-org (concat this-file-base ".org"))
             (this-file-el  (concat this-file-base ".el"))
+            (basebuf (or (buffer-base-buffer (current-buffer)) (current-buffer)))
             (tangled-file
-             (car
-              (org-babel-tangle-file this-file-org
-                                     this-file-el
-                                     "emacs-lisp"))))
+             (progn
+               (with-current-buffer basebuf (widen))
+               (car
+                (org-babel-tangle-file this-file-org
+                                       this-file-el
+                                       "emacs-lisp")))))
        (and (byte-compile-file tangled-file t)
             (format "Tangled, compiled, and loaded %s"
              tangled-file)))

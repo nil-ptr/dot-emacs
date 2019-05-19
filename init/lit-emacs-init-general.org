@@ -22,12 +22,13 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     #+END_SRC
 
   - This file needs access to the full =use-package= package when
-    compiled.
+    compiled. And I need =init-say= from my init macros.
 
     #+NAME: lit-emacs-general-imports
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
       (eval-when-compile
-        (require 'use-package))
+        (require 'use-package)
+        (require 'my-init-macros))
     #+END_SRC
 
 ** Recompilation Code                                              :noexport:
@@ -1214,11 +1215,36 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       (use-package powerline
         :defer t
         :ensure t
+        :config
+      <<my-powerline-vc-advice>>
         :hook (after-init . powerline-default-theme))
       ;; No real point in deferring this; it's tiny.
       (use-package encourage-mode
         :ensure t
         :diminish)
+    #+END_SRC
+
+    WRITTEN [2019-05-19 sön]:
+
+    =powerline= by default checks whether ~(buffer-file-name
+    (current-buffer))~ is ~nil~, as part of the logic to determine
+    whether to show vcs information. This doesn't work particularly
+    well in indirect buffers, where that value is always nil. Thus,
+    I'm forced to override it with my modified version defined here.
+
+    #+NAME: lit-init-my-powerline-vc-advice
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :tangle no :noweb-ref my-powerline-vc-advice
+      ;; Identical to powerline-vc save for using `my--get-base-buffer'
+      ;; instead of `current-buffer'.
+      (defpowerline my-powerline-vc
+        (when (and (buffer-file-name (my--get-base-buffer)) vc-mode)
+          (if (and window-system (not powerline-gui-use-vcs-glyph))
+              (format-mode-line '(vc-mode vc-mode))
+            (format " %s%s"
+                    (char-to-string #xe0a0)
+                    (format-mode-line '(vc-mode vc-mode))))))
+      (init-say "Overriding the definition of powerline-vc...")
+      (advice-add 'powerline-vc :override #'my-powerline-vc)
     #+END_SRC
 
 

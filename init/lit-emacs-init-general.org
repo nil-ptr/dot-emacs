@@ -1216,6 +1216,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
       (use-package powerline
         :defer t
         :ensure t
+        :functions (my-powerline-vc)
         :config
       <<my-powerline-vc-advice>>
         :hook (after-init . powerline-default-theme))

@@ -1221,6 +1221,27 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
         :diminish)
     #+END_SRC
 
+
+*** The =delight= package
+
+    A fancier version of =dimninish=, pretty much.
+
+    #+NAME: lit-init-general-delight
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (use-package delight
+        :ensure t)
+    #+END_SRC
+*** Additional =delight= / =dimninish= invocations
+
+    Some =diminish= calls that need to happen, but which don't really
+    belong anywhere.
+
+    #+NAME: lit-init-general-additional-diminish
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (diminish 'eldoc-mode)
+    #+END_SRC
+
+
 ** Other misc packages
 
    Packages I need here for some reason or another, but which don't
@@ -1267,6 +1288,8 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
      (use-package projectile
        :defer 5 ;; Load unconditionally after 5 seconds
+       ;; Reduce mode line impact
+       :delight '(:eval (concat " [" (projectile-project-name) "]"))
        :ensure t
        :commands (projectile-mode)
        :config (projectile-mode +1)
@@ -1637,6 +1660,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
        :ensure t
        :config (use-package pandoc-mode
                  :ensure t
+                 :diminish
                  :commands pandoc-load-default-settings
                  :hook markdown-mode
                  :config (pandoc-load-default-settings)))

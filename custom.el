@@ -277,14 +277,19 @@ workinghours mon-fri 08:00-17:00
     ((type "TODO(t)" "GOAL(g@)" "WAITING(w@/!)" "IN-PROGRESS(i!/@)" "|" "ABORTED(a@)" "DONE(d!)"))))
  '(org-track-ordered-property-with-tag t)
  '(package-check-signature (quote allow-unsigned))
- '(package-selected-packages (quote (htmlize diminish use-package)))
+ '(package-selected-packages
+   (quote
+    (delight auto-yasnippet avy avy-zap buffer-move column-enforce-mode company company-c-headers company-cabal company-ghci company-glsl company-math company-quickhelp diminish encourage-mode flycheck flycheck-haskell flycheck-pos-tip flyspell haskell-mode helm helm-ag helm-c-yasnippet helm-company helm-flycheck helm-flyspell helm-org-rifle helm-projectile highlight-indentation htmlize magit markdown-mode matlab-mode org-bullets org-plus-contrib pandoc-mode pdf-tools pos-tip powerline projectile rainbow-delimiters smartparens use-package whitespace-cleanup-mode yasnippet yatemplate)))
  '(pcomplete-command-completion-function
    (lambda nil
      (progn
        (message "pcomplete-command-completion-function called!")
        nil)) nil nil "I'm not sure when this gets called, so I'm adding a message here. Aside from that, it's disabled for the same reason that the pcomplete-default-completion-function is.")
  '(pcomplete-default-completion-function (lambda nil nil) nil nil "I don't really like the default behaviour, so I'm shutting it off. Specific modes can still define pcompletion though.")
+ '(powerline-display-mule-info t)
+ '(powerline-gui-use-vcs-glyph nil)
  '(powerline-height nil)
+ '(powerline-narrowed-indicator "⭿")
  '(powerline-text-scale-factor nil)
  '(projectile-ignored-projects (quote ("~" "~/.emacs.d")))
  '(projectile-keymap-prefix nil)

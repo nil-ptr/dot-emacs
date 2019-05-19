@@ -29,12 +29,14 @@ in =org-mode=.
     #+END_SRC
 
   - This file needs access to the full =use-package= package when
-    compiled.
+    compiled. And I need =init-say=.
 
     #+NAME: lit-emacs-linum-imports
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
       (eval-when-compile
-        (require 'use-package))
+        (require 'use-package)
+        (require 'my-init-macros)
+        (def-init-say "init-linum"))
     #+END_SRC
 
 
@@ -171,7 +173,7 @@ in =org-mode=.
            (and global-display-line-number-mode-ignore-starred-buffers
                 (string-match "*" (buffer-name)))))
 
-     (init-say "Adding advice to display-line-numbers--turn-on..")
+     (init-say "Adding advice to display-line-numbers--turn-on.." "display-line-numbers")
      (advice-add 'display-line-numbers--turn-on
                  :before-until                              ;(turnOnAdviceCondition)
                  #'my-display-line-numbers--turn-on-advice)

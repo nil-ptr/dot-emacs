@@ -70,10 +70,11 @@ There are two things you can do about this warning:
 (eval-when-compile
   (require 'my-load-macros)
   (require 'my-init-macros)
+  (def-init-say "init")
   ;; check if *any* use-package is around
   (unless (require 'use-package nil 'noerror)
-    (init-say "use-package not found..")
-    (init-say "querying user for permission to install..")
+    (init-say "use-package not found.." "use-package-check")
+    (init-say "querying user for permission to install.." "use-package-check")
     (if (y-or-n-p-with-timeout
          "Package use-package not found.  Download use-package?"
          10
@@ -82,7 +83,7 @@ There are two things you can do about this warning:
           (init-say "permission granted; installing use-package..")
           (package-refresh-contents)
           (package-install 'use-package))
-      (init-say "permission not granted; init success doubtful..")
+      (init-say "permission not granted; init success doubtful.." "use-package-check")
       (error "Cannot proceed without use-package!"))))
 
 
@@ -96,7 +97,7 @@ There are two things you can do about this warning:
     (and (boundp v) (eq v value))))
 
 ;; Actual recompilation machinery.
-(init-say "Running self-recompile check..")
+(init-say "Running self-recompile check.." "recompile-check")
 (defvar my--init-boot-important-flag-do-not-touch nil)
 (let ((ok
        (my-load-may-compile-el
@@ -112,7 +113,7 @@ There are two things you can do about this warning:
    ((and (numberp ok) (= 1 ok))
     (progn
       (init-say
-       "(old): init.elc was outdated or deps changed; recompiled")
+       "(old): init.elc was outdated or deps changed; recompiled.." "recompile-check")
       (setq my--init-boot-important-flag-do-not-touch 'init)))
 
    ;; Everything is ok, carry on.
@@ -196,26 +197,31 @@ There are two things you can do about this warning:
           (mapc (lambda (f) (load-file (concat f ".elc"))) exp-names)
 
         ;; Signal that this is about to happen.
-        (init-say "Init files in need of (re-)building: %s" recomplist)
+        (init-say (format "Init files in need of (re-)building: %s" recomplist)
+                  "recompile-lit-init")
 
         ;; Tangle imports, if needed
         (require 'ob-tangle) ; in scope, if package-initialize did its job
         (mapc (lambda(f)
-                (init-say "Generated %s"
-                          (car (last (org-babel-tangle-file
-                                      (concat f ".org")
-                                      (concat f ".el")
-                                      "emacs-lisp")))))
+                (init-say
+                 (format "Generated %s"
+                         (car (last (org-babel-tangle-file
+                                     (concat f ".org")
+                                     (concat f ".el")
+                                     "emacs-lisp"))))
+                 "recompile-lit-init"))
               recomplist)
 
         ;; Compile those that need it, just load those that do
         ;; not.
         (mapc (lambda (f)
                 (if (member f recomplist)
-                    (init-say "Compiled and loaded %s"
-                              (progn
-                                (byte-compile-file (concat f ".el") t)
-                                (concat f ".el")))
+                    (init-say
+                     (format "Compiled and loaded %s"
+                             (progn
+                               (byte-compile-file (concat f ".el") t)
+                               (concat f ".el")))
+                     "recompile-lit-init")
                   (load-file (concat f ".elc"))))
               exp-names)))))
 

@@ -58,11 +58,18 @@ file preforming the compilation will be ignored."
   `(expand-file-name ,name my-init-cask-pkg-dir))
 
 
-(defmacro init-say (msg &rest args)
-  `(message ,(concat "[%s] " msg)
-           (file-name-nondirectory load-file-name)
-           ,@args))
+(defmacro def-init-say (prefix)
+  "Should only be called from within `eval-when-compile'."
+    `(defsubst init-say (msg &optional category)
+       (message (concat ,(format "[%s" prefix)
+                         (if category (format "|%s] " category) "] ")
+                         "%s") msg)))
 
+(defmacro init-say-s (msg &rest args)
+  `(message "[%s] %s"
+            (eval-when-compile (file-name-nondirectory
+                                (or load-file-name "placeholder")))
+		       ,msg))
 
 
 

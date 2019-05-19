@@ -28,7 +28,8 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
       (eval-when-compile
         (require 'use-package)
-        (require 'my-init-macros))
+        (require 'my-init-macros)
+        (def-init-say "init-general"))
     #+END_SRC
 
 ** Recompilation Code                                              :noexport:
@@ -1243,7 +1244,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
             (format " %s%s"
                     (char-to-string #xe0a0)
                     (format-mode-line '(vc-mode vc-mode))))))
-      (init-say "Overriding the definition of powerline-vc...")
+      (init-say "Overriding the definition of powerline-vc.." "powerline")
       (advice-add 'powerline-vc :override #'my-powerline-vc)
     #+END_SRC
 

@@ -1657,11 +1657,29 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
                   "C-c C-b"
                   "C-c C-v")))
 
+        (use-package hlint-refactor
+          :ensure t
+          :defer t)
+
         (use-package flycheck-haskell
           :after (flycheck haskell-mode)
           :ensure t
           :hook (haskell-mode . flycheck-haskell-setup))
 
+      #+END_SRC
+
+    - Idris
+
+      #+NAME: lit-emacs-init-idris-mode
+      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+        (use-package idris-mode
+          :ensure t
+          :defer t)
+
+        (use-package helm-idris
+          :ensure t
+          :defer t
+          :after (helm idris-mode))
       #+END_SRC
 
     - MATLAB

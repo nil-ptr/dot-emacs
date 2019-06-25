@@ -40,7 +40,7 @@
  '(encourage-mode t)
  '(ensime-sbt-command "/usr/bin/sbt")
  '(explicit-shell-file-name "/bin/bash")
- '(find-directory-functions (quote (sr-dired cvs-dired-noselect dired-noselect)))
+ '(find-directory-functions (quote (cvs-dired-noselect dired-noselect)))
  '(flycheck-check-syntax-automatically (quote (save new-line mode-enabled)))
  '(flycheck-clang-args (quote ("-fPIE")))
  '(flycheck-clang-include-path nil)
@@ -279,7 +279,7 @@ workinghours mon-fri 08:00-17:00
  '(package-check-signature (quote allow-unsigned))
  '(package-selected-packages
    (quote
-    (delight auto-yasnippet avy avy-zap buffer-move column-enforce-mode company company-c-headers company-cabal company-ghci company-glsl company-math company-quickhelp diminish encourage-mode flycheck flycheck-haskell flycheck-pos-tip flyspell haskell-mode helm helm-ag helm-c-yasnippet helm-company helm-flycheck helm-flyspell helm-org-rifle helm-projectile highlight-indentation htmlize magit markdown-mode matlab-mode org-bullets org-plus-contrib pandoc-mode pdf-tools pos-tip powerline projectile rainbow-delimiters smartparens use-package whitespace-cleanup-mode yasnippet yatemplate)))
+    (hlint-refactor delight auto-yasnippet avy avy-zap buffer-move column-enforce-mode company company-c-headers company-cabal company-ghci company-glsl company-math company-quickhelp diminish encourage-mode flycheck flycheck-haskell flycheck-pos-tip flyspell haskell-mode helm helm-ag helm-c-yasnippet helm-company helm-flycheck helm-flyspell helm-org-rifle helm-projectile highlight-indentation htmlize magit markdown-mode matlab-mode org-bullets org-plus-contrib pandoc-mode pdf-tools pos-tip powerline projectile rainbow-delimiters smartparens use-package whitespace-cleanup-mode yasnippet yatemplate)))
  '(pcomplete-command-completion-function
    (lambda nil
      (progn
@@ -293,6 +293,7 @@ workinghours mon-fri 08:00-17:00
  '(powerline-text-scale-factor nil)
  '(projectile-ignored-projects (quote ("~" "~/.emacs.d")))
  '(projectile-keymap-prefix nil)
+ '(projectile-track-known-projects-automatically nil)
  '(rainbow-delimiters-max-face-count 8)
  '(rainbow-identifiers-cie-l*a*b*-lightness 25)
  '(rainbow-identifiers-cie-l*a*b*-saturation 40)
@@ -365,6 +366,7 @@ workinghours mon-fri 08:00-17:00
  '(ghc-face-hole ((t (:underline "purple"))))
  '(ghc-face-warn ((t (:underline "gold"))))
  '(haskell-constructor-face ((t (:foreground "navajo white" :weight bold))))
+ '(helm-selection ((t (:distant-foreground "black" :box (:line-width 3 :color "forest green" :style released-button)))))
  '(highlight-indentation-current-column-face ((t (:background "gray10"))))
  '(highlight-indentation-face ((t (:inherit fringe :background "gray18"))))
  '(idris-semantic-bound-face ((t (:foreground "gray50" :weight extra-bold))))

@@ -68,7 +68,6 @@ There are two things you can do about this warning:
 ;; In fact, if it's missing, try to install it right here and now
 ;; before proceeding.
 (eval-when-compile
-  (require 'my-load-macros)
   (require 'my-init-macros)
   (def-init-say "init")
   ;; check if *any* use-package is around
@@ -104,7 +103,6 @@ There are two things you can do about this warning:
         (emacs-path "init")
         t
         (elispfiles-path "my-init-macros.el")
-        (elispfiles-path "my-load-macros.el")
         (emacs-path "elpa") ;; package.el installs packages here
         )))
   (cond
@@ -121,11 +119,11 @@ There are two things you can do about this warning:
     (setq my--init-boot-important-flag-do-not-touch t))
 
    ;; Failure, set flag to prevent loading anything further.
-   (t
-    (progn
-      (error
-       "Error in init.el: self-compile failed: %s" ok)
-      (setq my--init-boot-important-flag-do-not-touch 'initfail)))))
+     (t
+      (progn
+        (error
+         "Error in init.el: self-compile failed: %s" ok)
+        (setq my--init-boot-important-flag-do-not-touch 'initfail)))));)
 
 ;;; -------------------------------------------------- ;;;
 ;;; GUARD AGAINST EVALUATING TWICE                     ;;;

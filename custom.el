@@ -200,7 +200,7 @@
       "* %^{Title}
   SCHEDULED: %^T" :immediate-finish t :empty-lines 1 :clock-resume t)
      ("s" "Stub." entry
-      (file+olp "~/.orgfiles/general.org" "Task managment tree" "Stubs")
+      (file+olp "~/.orgfiles/general.org" "Task Stubs")
       "* TODO %? :stub:%^G
   Created: %U
 

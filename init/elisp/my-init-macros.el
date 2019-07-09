@@ -5,6 +5,33 @@
 
 ;;; Code:
 
+;; Path helpers
+
+
+(defsubst emacs-path(name)
+  (expand-file-name name user-emacs-directory))
+(defsubst elispfiles-path(name)
+  (expand-file-name name my-init-elisp-dir))
+
+;; Logging helper
+
+(defmacro def-init-say (prefix &optional default-category)
+  "Define a logger with prefix PREFIX.
+
+Optionally, a DEFAULT-CATEGORY may be specified.  This will be
+used in calls to the resulting 'init-say' function, if no
+category argument is passed in.  If DEFAULT-CATEGORY is omitted
+or nil, and no category is given at a 'init-say' call site, no
+category field will be displayed in the output.
+
+Should only be called from within `eval-when-compile'."
+  `(defsubst init-say (msg &optional category override-prefix)
+         (message (concat (format "[%s" (or override-prefix ,prefix))
+                          (if (or category ,default-category)
+                              (format "|%s] " (or category ,default-category))
+                            "] ")
+                          "%s") msg)))
+
 
 ;; Timestamp checking functions.
 
@@ -82,26 +109,6 @@ calling. Missing files will be perceived as older than PATH.elc."
 
 
 ;;;
-
-(defsubst emacs-path(name)
-  (expand-file-name name user-emacs-directory))
-(defsubst elispfiles-path(name)
-  (expand-file-name name my-init-elisp-dir))
-
-(defmacro def-init-say (prefix)
-  "Should only be called from within `eval-when-compile'."
-    `(defsubst init-say (msg &optional category)
-       (message (concat ,(format "[%s" prefix)
-                         (if category (format "|%s] " category) "] ")
-                         "%s") msg)))
-
-(defmacro init-say-s (msg &rest args)
-  `(message "[%s] %s"
-            (eval-when-compile (file-name-nondirectory
-                                (or load-file-name "placeholder")))
-		       ,msg))
-
-
 
 (provide 'my-init-macros)
 ;;; my-init-macros.el ends here

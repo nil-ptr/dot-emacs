@@ -9,8 +9,9 @@
 ;;; Code:
 
 ;; Init timing
-(message "Starting timer for the loading of %s..." load-file-name)
-  (defconst emacs-start-time (current-time))
+(unless (boundp 'my--init-boot-important-flag-do-not-touch)
+  (message "Starting timer for the loading of %s..." load-file-name)
+  (defconst emacs-start-time (current-time)))
 
 ;; Useful to find out what caused a package to load early for
 ;; seemingly no reason.
@@ -57,8 +58,17 @@ There are two things you can do about this warning:
 ;; Initialize packages, adjust load-path.
 (eval-and-compile
   (package-initialize)
+  ;; These two constants need to be defined before calling certain
+  ;; functions in my-init-macros.el.
+  ;;
+  ;; * my-init-elisp-dir: contains my-init-macros.el
+  ;;
+  ;; * lit-emacs-init-dir: contains my literate elisp/org init files.
   (defconst my-init-elisp-dir (expand-file-name "init/elisp"
                                                 user-emacs-directory))
+  (defconst lit-emacs-init-dir (expand-file-name "init"
+                                                 user-emacs-directory))
+  ;; my-init-macros.el needs to be on the load path.
   (add-to-list 'load-path my-init-elisp-dir))
 
 ;; When compiling: Load the needed macro declarations, and make sure
@@ -91,12 +101,20 @@ There are two things you can do about this warning:
 ;;; -------------------------------------------------- ;;;
 
 (eval-when-compile
-  (defsubst my--bound-and-eq (v value)
-    "Return t if V is bound and `eq' to VALUE."
-    (and (boundp v) (eq v value))))
+  (defsubst my--bound-and-equal (v value)
+    "Return t if V is bound and its `symbol-value' is `equal' to VALUE."
+    (and (boundp v) (equal (symbol-value v) value)))
+  (defsubst my--init-boot-important-flag-is (value)
+    "Return t if the init flag is `equal' to VALUE."
+    (my--bound-and-equal
+     'my--init-boot-important-flag-do-not-touch
+     value))
+
+  (def-init-say "init" "recompile-check"))
+
 
 ;; Actual recompilation machinery.
-(init-say "Running self-recompile check.." "recompile-check")
+(init-say "Running self-recompile check..")
 (defvar my--init-boot-important-flag-do-not-touch nil)
 (let ((ok
        (my-load-may-compile-el
@@ -111,19 +129,21 @@ There are two things you can do about this warning:
    ((and (numberp ok) (= 1 ok))
     (progn
       (init-say
-       "(old): init.elc was outdated or deps changed; recompiled.." "recompile-check")
-      (setq my--init-boot-important-flag-do-not-touch 'init)))
+       "From old init.elc: init.elc was outdated or deps changed; recompiled.."
+       nil
+       "old-init")
+      (setq my--init-boot-important-flag-do-not-touch "old-init")))
 
    ;; Everything is ok, carry on.
    ((and (numberp ok) (= 0 ok))
-    (setq my--init-boot-important-flag-do-not-touch t))
+      (setq my--init-boot-important-flag-do-not-touch "new-init"))
 
    ;; Failure, set flag to prevent loading anything further.
      (t
       (progn
         (error
          "Error in init.el: self-compile failed: %s" ok)
-        (setq my--init-boot-important-flag-do-not-touch 'initfail)))));)
+        (setq my--init-boot-important-flag-do-not-touch "initfail")))))
 
 ;;; -------------------------------------------------- ;;;
 ;;; GUARD AGAINST EVALUATING TWICE                     ;;;
@@ -131,7 +151,7 @@ There are two things you can do about this warning:
 
 
 ;;; Actual init logic:
-(when (my--bound-and-eq my--init-boot-important-flag-do-not-touch t)
+(when (my--init-boot-important-flag-is "new-init")
   (init-say "Proceeding with initialisation..")
 
 
@@ -275,7 +295,11 @@ There are two things you can do about this warning:
 ) ; This is an important paren. There are many like it, but this one
   ; is necessary to close the '(when' starting under 'Actual init logic:'.
 
-
+(when (my--init-boot-important-flag-is "old-init")
+  (init-say
+   "Skipped remaining init steps; new init.elc should've covered those.."
+   nil
+   "old-init"))
 ;;; End of Actual init logic
 
 (provide 'init)

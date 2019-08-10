@@ -55,6 +55,7 @@ There are two things you can do about this warning:
    ;; Return the arrived at list.
    package-archives))
 
+
 ;; Initialize packages, adjust load-path.
 (eval-and-compile
   (package-initialize)
@@ -63,10 +64,10 @@ There are two things you can do about this warning:
   ;;
   ;; * my-init-elisp-dir: contains my-init-macros.el
   ;;
-  ;; * lit-emacs-init-dir: contains my literate elisp/org init files.
+  ;; * my-lit-emacs-init-dir: contains my literate elisp/org init files.
   (defconst my-init-elisp-dir (expand-file-name "init/elisp"
                                                 user-emacs-directory))
-  (defconst lit-emacs-init-dir (expand-file-name "init"
+  (defconst my-lit-emacs-init-dir (expand-file-name "init"
                                                  user-emacs-directory))
   ;; my-init-macros.el needs to be on the load path.
   (add-to-list 'load-path my-init-elisp-dir))
@@ -191,9 +192,6 @@ There are two things you can do about this warning:
 
 
 
-;; My literate emacs init files are in this dir
-(eval-and-compile
-  (defconst lit-emacs-init-dir (expand-file-name "init" user-emacs-directory)))
 
 
 ;; Some machinery. I may chose to move some of this out of here later.
@@ -202,7 +200,7 @@ There are two things you can do about this warning:
     (mapcar (lambda (x)
                (expand-file-name
                 (concat "lit-emacs-init-" x)
-                lit-emacs-init-dir))
+                my-lit-emacs-init-dir))
             names))
 
   (defsubst my-load-init-imports (&rest names)

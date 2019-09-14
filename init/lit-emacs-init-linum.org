@@ -113,7 +113,10 @@ in =org-mode=.
     <<display-line-numbers-new-defcustoms>>
       :config
     <<display-line-numbers--turn-on-advice>>
-      (global-display-line-numbers-mode 1))
+    <<line-numbers-toggle-widen>>
+      (global-display-line-numbers-mode 1)
+      :bind (:map global-map
+                  ("H-n l" . my-toggle-line-numbers-widen)))
   #+END_SRC
 
 
@@ -181,6 +184,37 @@ in =org-mode=.
 
 
 
+
+** Numbers And Narrowing
+
+   WRITTEN: [2019-08-10 lör]
+
+   The built-in =display-line-numbers-mode= of =emacs= version 26.1
+   supports numbering lines in a narrowed buffer in one of two
+   modes. Either it can acknowledge the narrowing and display numbers
+   relative to the currently visible part of the buffer, or it can
+   ignore the narrowing and display the actual (widened) line number.
+
+   I normally want the former behaviour, because it makes more sense
+   if one views a narrowed buffer to number only those lines that are
+   actually accessible. /But/, when trying to track down sources of
+   error messages from external programs (such as compilers, for
+   instance) one frequently needs the widened line number, since the
+   external program is likely unaware of narrowing.
+
+   Thus a toggle is needed:
+
+
+   #+NAME: lit-emacs-init-display-line-numbers-mode-toggle-widen
+   #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)" :noweb-ref line-numbers-toggle-widen :noweb no
+     (defun my-toggle-line-numbers-widen()
+       "Toggle whether to display narrowed or true line numbers when narrowed."
+       (interactive)
+       ;; No further checks are needed here, since this variable can only
+       ;; be nil or non-nil, and becomes buffer local when modified.
+       (setq display-line-numbers-widen
+             (not display-line-numbers-widen)))
+   #+END_SRC
 
 
 * Linum                                                            :pre_v_26:

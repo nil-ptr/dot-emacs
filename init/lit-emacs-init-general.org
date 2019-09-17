@@ -1338,7 +1338,6 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 ** General Editing Functionality
 
 
-
 *** =company=
 
     Completion setup is fairly simplistic:
@@ -1397,6 +1396,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
 
 **** Additional =company= backends
 
+     #+NAME: lite-emacs-init-company-extra-backends-default
      #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
        (use-package company-cabal
          :after (company)
@@ -1406,7 +1406,7 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
          :after (company)
          :ensure t
          :defer t)
-       (use-package company-c-headers
+       (use-package company-math
          :after (company)
          :ensure t
          :defer t)
@@ -1414,15 +1414,36 @@ category. Imported by [[file:~/.emacs.d/init.el][init.el]].
          :after (company)
          :ensure t
          :defer t)
-       (use-package company-math
-         :after (company)
-         :ensure t
-         :defer t)
-       (use-package company-quickhelp
+       (use-package company-c-headers
          :after (company)
          :ensure t
          :defer t)
      #+END_SRC
+
+     These above need to be activated by adding the relevant commands
+     to =company-backends=. This is best done via the =customize=
+     interface.
+
+
+**** =company-quickhelp=
+
+     This package displays help for completions, when completions are
+     hovered.
+
+     #+NAME: lit-emacs-init-company-quickhelp-setup
+     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+       (use-package company-quickhelp
+         :after (company)
+         :ensure t
+         :defer t
+         ;; Load this in prog modes.
+         :init
+         (defun my--company-quickhelp-hook()
+           "Activate `company-quickhelp-mode' in `prog-mode'"
+           (company-quickhelp-mode))
+         :hook (prog-mode . my--company-quickhelp-hook))
+     #+END_SRC
+
 
 *** =pcomplete=
 

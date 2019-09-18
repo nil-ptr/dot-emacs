@@ -59,15 +59,19 @@ There are two things you can do about this warning:
 ;; Initialize packages, adjust load-path.
 (eval-and-compile
   (package-initialize)
-  ;; These two constants need to be defined before calling certain
+  ;; These three constants need to be defined before calling certain
   ;; functions in my-init-macros.el.
   ;;
   ;; * my-init-elisp-dir: contains my-init-macros.el
   ;;
   ;; * my-lit-emacs-init-dir: contains my literate elisp/org init files.
+  ;;
+  ;; * my-init-custom-dir: contains my split custom files.
   (defconst my-init-elisp-dir (expand-file-name "init/elisp"
                                                 user-emacs-directory))
   (defconst my-lit-emacs-init-dir (expand-file-name "init"
+                                                    user-emacs-directory))
+  (defconst my-init-custom-dir (expand-file-name "init/custom"
                                                  user-emacs-directory))
   ;; my-init-macros.el needs to be on the load path.
   (add-to-list 'load-path my-init-elisp-dir))
@@ -111,11 +115,11 @@ There are two things you can do about this warning:
      'my--init-boot-important-flag-do-not-touch
      value))
 
-  (def-init-say "init" "recompile-check"))
+  (def-init-say "init" "info"))
 
 
 ;; Actual recompilation machinery.
-(init-say "Running self-recompile check..")
+(init-say "Running self-recompile check.." "recompile-check")
 (defvar my--init-boot-important-flag-do-not-touch nil)
 (let ((ok
        (my-load-may-compile-el
@@ -131,7 +135,7 @@ There are two things you can do about this warning:
     (progn
       (init-say
        "From old init.elc: init.elc was outdated or deps changed; recompiled.."
-       nil
+       "recompile-check"
        "old-init")
       (setq my--init-boot-important-flag-do-not-touch "old-init")))
 
@@ -182,8 +186,35 @@ There are two things you can do about this warning:
 ;; Fixes a potential keyboard issue.
 (require 'iso-transl)
 
+;;; -------------------------------------------------- ;;;
+;;; CUSTOMIZE AND INITSPLIT                            ;;;
+;;; -------------------------------------------------- ;;;
+
+
 ;; set custom file name
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(setq custom-file (customfiles-path "custom.el"))
+
+(if (file-exists-p (elispfiles-path "initsplit/initsplit.el"))
+    (let ((ok (my-load-may-compile-el
+               (elispfiles-path "initsplit/initsplit")
+               t)))
+      (cond
+       ;; Recompiling it.
+       ((and (numberp ok) (= 1 ok))
+        (init-say "initsplit.el changed; recompiled.." "customize-setup"))
+       ;; Recompilation not needed. Just load the file.
+       ((and (numberp ok) (= 0 ok))
+        (load (elispfiles-path "initsplit/initsplit.elc")))
+       ;; Uh oh.
+       (t
+        (error
+         "Error in int,el: initsplit.el compilation failed: %s" ok))))
+  (init-say (format "'%s' not found (git submodule not fetched?)"
+                    (elispfiles-path "initsplit/initsplit.el"))
+            "customize-setup")
+  (init-say "Customize won't load/save settings appropriately" "warning"))
+
+
 
 
 ;;; -------------------------------------------------- ;;;
@@ -264,6 +295,20 @@ There are two things you can do about this warning:
 
 ;; load custom vars
 (load custom-file)
+
+;; Assuming initsplit loaded correctly, we should load all those split
+;; custom files.
+(when (and (boundp 'initsplit-default-directory)
+           (boundp 'initsplit-customizations-alist))
+  (mapc #'(lambda (initsplit-entry)
+            (let* ((el-path (customfiles-path (cadr initsplit-entry)))
+                   (elc-path (concat el-path "c")))
+              (if (file-exists-p elc-path)
+                  (load elc-path)
+                (load el-path))))
+        initsplit-customizations-alist))
+
+
 
 ;;; -------------------------------------------------- ;;;
 ;;; THE END                                            ;;;

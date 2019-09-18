@@ -12,6 +12,8 @@
   (expand-file-name name user-emacs-directory))
 (defsubst elispfiles-path(name)
   (expand-file-name name my-init-elisp-dir))
+(defsubst customfiles-path(name)
+  (expand-file-name name my-init-custom-dir))
 
 ;; Logging helper
 
@@ -96,7 +98,9 @@ calling. Missing files will be perceived as older than PATH.elc."
                             (or
                              (not (file-exists-p f))
                              (my--init-newer-file-p compiled-file f)))
-             (cons file other-files))))
+                        (if other-files
+                            (cons file other-files)
+                          (list file)))))
 
          (if (byte-compile-file file load)
              (progn

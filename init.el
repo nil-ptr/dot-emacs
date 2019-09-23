@@ -59,18 +59,14 @@ There are two things you can do about this warning:
 ;; Initialize packages, adjust load-path.
 (eval-and-compile
   (package-initialize)
-  ;; These three constants need to be defined before calling certain
+  ;; These two constants need to be defined before calling certain
   ;; functions in my-init-macros.el.
   ;;
   ;; * my-init-elisp-dir: contains my-init-macros.el
   ;;
-  ;; * my-lit-emacs-init-dir: contains my literate elisp/org init files.
-  ;;
   ;; * my-init-custom-dir: contains my split custom files.
   (defconst my-init-elisp-dir (expand-file-name "init/elisp"
                                                 user-emacs-directory))
-  (defconst my-lit-emacs-init-dir (expand-file-name "init"
-                                                    user-emacs-directory))
   (defconst my-init-custom-dir (expand-file-name "init/custom"
                                                  user-emacs-directory))
   ;; my-init-macros.el needs to be on the load path.
@@ -97,7 +93,8 @@ There are two things you can do about this warning:
           (init-say "permission granted; installing use-package..")
           (package-refresh-contents)
           (package-install 'use-package))
-      (init-say "permission not granted; init success doubtful.." "use-package-check")
+      (init-say "permission not granted; init success doubtful.."
+                "use-package-check")
       (error "Cannot proceed without use-package!"))))
 
 
@@ -126,7 +123,7 @@ There are two things you can do about this warning:
         (emacs-path "init")
         t
         (elispfiles-path "my-init-macros.el")
-        (emacs-path "elpa") ;; package.el installs packages here
+        package-user-dir ;; package.el installs packages here
         )))
   (cond
 
@@ -208,7 +205,7 @@ There are two things you can do about this warning:
        ;; Uh oh.
        (t
         (error
-         "Error in int,el: initsplit.el compilation failed: %s" ok))))
+         "Error in init.el: initsplit.el compilation failed: %s" ok))))
   (init-say (format "'%s' not found (git submodule not fetched?)"
                     (elispfiles-path "initsplit/initsplit.el"))
             "customize-setup")
@@ -218,75 +215,64 @@ There are two things you can do about this warning:
 
 
 ;;; -------------------------------------------------- ;;;
-;;; LITERATE INIT IMPORTS                              ;;;
+;;; LOAD LITERATE INIT                                 ;;;
 ;;; -------------------------------------------------- ;;;
 
 
-
-
-
-;; Some machinery. I may chose to move some of this out of here later.
 (eval-when-compile
-  (defsubst my-load-init-exp-names (names)
-    (mapcar (lambda (x)
-               (expand-file-name
-                (concat "lit-emacs-init-" x)
-                my-lit-emacs-init-dir))
-            names))
-
-  (defsubst my-load-init-imports (&rest names)
-    (let* ((exp-names  (my-load-init-exp-names names))
+  (defsubst load-literate-initfile()
+    (let* ((initfile (emacs-path "lit-init"))
+           (init_org (concat initfile ".org"))
+           (init_el  (concat initfile ".el"))
+           (init_elc (concat init_el "c"))
            (pkg-dir-mod-time
-            (nth 5 (my--init-file-attributes package-user-dir)))
-           (recomplist
-            (my-load-check-org-elc-freshness exp-names pkg-dir-mod-time)))
-      (if (null recomplist)
-          (mapc (lambda (f) (load-file (concat f ".elc"))) exp-names)
+            (nth 5 (my--init-file-attributes package-user-dir))))
+      (unless (file-exists-p init_org)
+        (error (format "FATAL: literate init file '%s' not found!" init_org)))
+      (if (and
+           ;; We're checking three things here:
+           ;;
+           ;; 1. The .elc file exists.
+           ;; 2. The .elc file is not older than the pkg dir.
+           ;; 3. The .elc file is not older than the .org file it was
+           ;;    generated from.
+           (file-exists-p init_elc)
+           (my--init-newer-than-p init_elc pkg-dir-mod-time)
+           (my--init-newer-file-p init_elc init_org))
 
-        ;; Signal that this is about to happen.
-        (init-say (format "Init files in need of (re-)building: %s" recomplist)
-                  "recompile-lit-init")
+          ;; It's neither missing nor outdated? Just load it then.
+          (load-file init_elc)
 
-        ;; Tangle imports, if needed
-        (require 'ob-tangle) ; in scope, if package-initialize did its job
-        (mapc (lambda(f)
-                (init-say
-                 (format "Generated %s"
-                         (car (last (org-babel-tangle-file
-                                     (concat f ".org")
-                                     (concat f ".el")
-                                     "emacs-lisp"))))
-                 "recompile-lit-init"))
-              recomplist)
+        ;; Else: Rebuild!
+        (init-say (format "Need to rebuild %s" init_elc) "recompile-lit-init")
 
-        ;; Compile those that need it, just load those that do
-        ;; not.
-        (mapc (lambda (f)
-                (if (member f recomplist)
-                    (init-say
-                     (format "Compiled and loaded %s"
-                             (progn
-                               (byte-compile-file (concat f ".el") t)
-                               (concat f ".el")))
-                     "recompile-lit-init")
-                  (load-file (concat f ".elc"))))
-              exp-names)))))
+        ;; Tangle, if .org is newer than .el or .el is missing.
+        (when (or (not (file-exists-p init_el))
+                  (my--init-newer-file-p init_org init_el))
+          (require 'ob-tangle) ; in scope, if package-initialize did its job
+          (init-say
+           (format "Generated %s"
+                   ;; Passing an output path is strictly speaking
+                   ;; superflous, since lit-init.org sets :tangle to
+                   ;; yes globally. But I'm passing init_el in here
+                   ;; anyway, just to be explicit.
+                   (car (last (org-babel-tangle-file
+                               init_org
+                               init_el
+                               "emacs-lisp"))))
+           "recompile-lit-init"))
 
-;;; -------------------------------------------------- ;;;
-;;; LOAD LITERATE INIT IMPORTS                         ;;;
-;;; -------------------------------------------------- ;;;
+        ;; Compile the relevant .el file.
+        (init-say
+         (format "Compiled and loaded %s"
+                 (progn
+                   (byte-compile-file init_el t)
+                   init_el))
+         "recompile-lit-init")))))
 
+;; Do it.
+(load-literate-initfile)
 
-
-(my-load-init-imports
-
-  "general"     ;; The "misc" import, basically.
-  "helm"        ;; Sets up the helm-* packages I use.
-  "org"         ;; Some setup for org-mode.
-  "linum"       ;; Some setup to make global-linum-mode behave.
-  "templating"  ;; yas, aya, yatemplate setup.
-
-  )
 
 ;;; -------------------------------------------------- ;;;
 ;;; LOAD CUSTOM FILE                                   ;;;

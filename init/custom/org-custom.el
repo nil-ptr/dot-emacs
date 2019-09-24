@@ -171,7 +171,8 @@
  '(org-pretty-entities-include-sub-superscripts nil)
  '(org-refile-targets
    (quote
-    ((org-agenda-files :maxlevel . 2))))
+    ((nil :maxlevel . 3)
+     (org-agenda-files :maxlevel . 2))))
  '(org-tag-faces nil)
  '(org-tag-persistent-alist
    (quote

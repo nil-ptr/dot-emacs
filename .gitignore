@@ -1,5 +1,21 @@
 # -*- mode: gitignore; -*-
 
+### Manual exclusion ###
+
+# These are only locally meaningful
+bookmarks
+projectile*
+
+# Autogen'd; I don't want it
+request/
+
+# This is auto generated and should be ignored.
+lit-init.el
+
+# Don't include local custom file
+init/custom/local-custom.el
+
+
 ### gitignore.io autogen'd ###
 
 ### Emacs ###
@@ -61,16 +77,3 @@ flycheck_*.el
 # Undo-tree save-files
 *.~undo-tree
 
-### Manual exclusion ###
-
-# These are only locally meaningful
-bookmarks
-projectile*
-
-# Autogen'd; I don't want it
-request/
-
-### Important! ###
-
-# The .el files of this form are autogen'd, and should not be saved.
-init/lit-emacs-init-*.el

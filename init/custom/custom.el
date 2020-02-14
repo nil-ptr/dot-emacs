@@ -20,6 +20,7 @@
    (quote libnotify))
  '(ansi-color-names-vector
    ["#242424" "#e5786d" "#95e454" "#cae682" "#8ac6f2" "#333366" "#ccaa8f" "#f6f3e8"])
+ '(auto-insert-mode t)
  '(centered-window-mode nil)
  '(custom-enabled-themes
    (quote
@@ -33,6 +34,9 @@
  '(dhall-format-at-save nil)
  '(encourage-mode t)
  '(ensime-sbt-command "/usr/bin/sbt")
+ '(exec-path
+   (quote
+    ("/opt/ghc/bin" "/home/nils/bin" "/home/nils/.cabal/bin" "/home/nils/.local/bin" "/usr/local/bin" "/usr/bin" "/bin" "/usr/local/games" "/usr/games" "/usr/local/libexec/emacs/26.2/x86_64-pc-linux-gnu")))
  '(explicit-shell-file-name "/bin/bash")
  '(find-directory-functions
    (quote
@@ -53,7 +57,7 @@
  '(haskell-process-suggest-hoogle-imports t)
  '(haskell-process-suggest-remove-import-lines t)
  '(haskell-process-type
-   (quote stack-ghci))
+   (quote cabal-repl))
  '(haskell-stylish-on-save t)
  '(haskell-tags-on-save t)
  '(helm-autoresize-mode t)
@@ -76,7 +80,8 @@
 ")
  '(initsplit-customizations-alist
    (quote
-    (("^org-agenda-files$" "local-custom.el" t t)
+    (("^org-agenda-custom-commands$" "local-custom.el" t t)
+     ("^org-agenda-files$" "local-custom.el" t t)
      ("^company" "company-custom.el" t t)
      ("^org" "org-custom.el" t t)
      ("^flycheck" "flycheck-custom.el" t t)))
@@ -107,7 +112,7 @@ items to fire, even though they're entirely uncalled for.")
    (quote allow-unsigned))
  '(package-selected-packages
    (quote
-    (org-picklink hlint-refactor delight auto-yasnippet avy avy-zap buffer-move column-enforce-mode company company-c-headers company-cabal company-ghci company-glsl company-math company-quickhelp diminish encourage-mode flycheck flycheck-haskell flycheck-pos-tip flyspell haskell-mode helm helm-ag helm-c-yasnippet helm-company helm-flycheck helm-flyspell helm-org-rifle helm-projectile highlight-indentation htmlize magit markdown-mode matlab-mode org-bullets org-plus-contrib pandoc-mode pdf-tools pos-tip powerline projectile rainbow-delimiters smartparens use-package whitespace-cleanup-mode yasnippet yatemplate)))
+    (company-stan eldoc-stan flycheck-stan org-picklink hlint-refactor delight auto-yasnippet avy avy-zap buffer-move column-enforce-mode company company-c-headers company-cabal company-ghci company-glsl company-math company-quickhelp diminish encourage-mode flycheck flycheck-haskell flycheck-pos-tip flyspell haskell-mode helm helm-ag helm-c-yasnippet helm-company helm-flycheck helm-flyspell helm-org-rifle helm-projectile highlight-indentation htmlize magit markdown-mode matlab-mode org-bullets org-plus-contrib pandoc-mode pdf-tools pos-tip powerline projectile rainbow-delimiters smartparens use-package whitespace-cleanup-mode yasnippet yatemplate)))
  '(pcomplete-command-completion-function
    (lambda nil
      (progn
@@ -132,7 +137,9 @@ items to fire, even though they're entirely uncalled for.")
  '(rainbow-identifiers-cie-l*a*b*-saturation 40)
  '(safe-local-variable-values
    (quote
-    ((column-enforce-column . 70)
+    ((flycheck-disabled-checkers haskell-stack-ghc)
+     (flycheck-ghc-package-databases "/home/nils/.cabal/store/ghc-8.8.1/package.db" "dist-newstyle/packagedb/ghc-8.8.1")
+     (column-enforce-column . 70)
      (column-enforce-column . 65)
      (column-enforce-column . 80))))
  '(scroll-bar-mode nil)
@@ -154,8 +161,8 @@ items to fire, even though they're entirely uncalled for.")
    (quote
     (".[ch]\\(\\+\\+\\|pp\\|c\\|h\\|xx\\)?" ".tex\\(i\\(nfo\\)?\\)?" ".el" ".emacs" ".l" ".lsp" ".p" ".java" ".js" ".f\\(90\\|77\\|or\\)?" ".ad[abs]" ".p[lm]" ".tcl" ".m" ".scm" ".pm" ".py" ".g" ".s?html" ".ma?k" "[Mm]akefile\\(\\.in\\)?" ".toml" ".rs" ".hs" ".cabal")))
  '(speedbar-use-images nil)
- '(split-height-threshold 90)
- '(split-width-threshold 90)
+ '(split-height-threshold 70)
+ '(split-width-threshold 120)
  '(tab-width 4)
  '(tags-add-tables nil)
  '(tags-revert-without-query t)
@@ -172,7 +179,8 @@ items to fire, even though they're entirely uncalled for.")
     (yas-dropdown-prompt yas-completing-prompt yas-ido-prompt yas-no-prompt)))
  '(yas-snippet-dirs
    (quote
-    ("~/.emacs.d/snippets" yas-installed-snippets-dir)))
+    ("~/.emacs.d/snippets"))
+   nil nil "Removed the \"yas-installed-snippets-dir\" variable from this list, since that variable was made obsolete some time ago.")
  '(yas-triggers-in-field t))
 
 

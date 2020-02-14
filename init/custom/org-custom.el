@@ -5,66 +5,6 @@
  ;; If there is more than one, they won't work right.
  '(org-agenda-block-separator
    "════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════")
- '(org-agenda-custom-commands
-   (quote
-    ((":" . "List stub headings")
-     (":s" "All headings tagged as stubs, except those with a STUB_TYPE_FLAG set to PHONY or IGNORE" tags "stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}" nil)
-     (":i" "All headings tagged with stub and INBOX, except those with a STUB_TYPE_FLAG set to PHONY or IGNORE" tags "INBOX+stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
-      ((org-agenda-overriding-header "Stubs in INBOX trees")))
-     (":S" "All headings tagged as stubs, including those normally hidden by their STUB_TYPE_FLAG property" tags "stub" nil)
-     (":t" "All active TODO headings tagged as stubs, except those with a STUB_TYPE_FLAG set to PHONY or IGNORE" tags-todo "stub-STUB_TYPE_FLAG={PHONY\\|IGNORE}"
-      ((org-agenda-overriding-header "Stub TODO headings")
-       (org-agenda-skip-function
-        (quote
-         (org-agenda-skip-entry-if
-          (quote todo)
-          (quote done))))))
-     (":T" "All TODO headings tagged as stubs, including DONE and ABORTED ones, and those normally hidden by their STUB_TYPE_FLAG property" tags-todo "stub" nil)
-     (":!" "All headings with a STUB_TYPE_FLAG that aren't tagged with stub" tags "STUB_TYPE_FLAG={.+}-stub" nil)
-     (";" . "Multi block agenda views")
-     (";W" "Agenda, coupled with WORK tasks and WORK stubs"
-      ((agenda "" nil)
-       (todo "TODO|IN-PROGRESS|WAITING"
-             ((org-agenda-overriding-header "Unscheduled TODO items tagged as WORK")
-              (org-agenda-skip-function
-               (quote
-                (org-agenda-skip-entry-if
-                 (quote scheduled))))))
-       (todo "GOAL"
-             ((org-agenda-overriding-header "All GOAL items tagged as WORK"))))
-      ((org-agenda-tag-filter-preset
-        (quote
-         ("-CHORE" "+WORK")))
-       (org-agenda-files
-        (quote
-         ("~/.orgfiles/work.org" "~/.orgfiles/general.org")))))
-     (";;" "Full agenda, including habits, ANCHORs and stubs listings"
-      ((agenda "" nil)
-       (todo "TODO|IN-PROGRESS|WAITING"
-             ((org-agenda-overriding-header "Unscheduled TODO items")
-              (org-agenda-skip-function
-               (quote
-                (org-agenda-skip-entry-if
-                 (quote scheduled))))))
-       (todo "GOAL"
-             ((org-agenda-overriding-header "All GOAL headings"))))
-      nil)
-     (";D" "List all non-archived DONE and ABORTED headings (except habits)"
-      ((todo "DONE|ABORTED"
-             ((org-agenda-overriding-header "All DONE or ABORTED WORK tasks")
-              (org-agenda-tag-filter-preset
-               (quote
-                ("+WORK")))))
-       (todo "DONE|ABORTED"
-             ((org-agenda-overriding-header "All DONE or ABORTED non-WORK tasks")
-              (org-agenda-tag-filter-preset
-               (quote
-                ("-WORK-STYLE=\"habit\""))))))
-      ((org-agenda-skip-function
-        (quote
-         (org-agenda-skip-entry-if
-          (quote nottodo)
-          (quote done)))))))))
  '(org-agenda-dim-blocked-tasks nil)
  '(org-agenda-follow-indirect nil)
  '(org-agenda-inhibit-startup t)
@@ -152,6 +92,7 @@
  '(org-journal-file-format "%Y-%m-%d")
  '(org-keep-stored-link-after-insertion t)
  '(org-level-color-stars-only t)
+ '(org-link-keep-stored-after-insertion t)
  '(org-link-search-must-match-exact-headline t)
  '(org-log-done
    (quote note))

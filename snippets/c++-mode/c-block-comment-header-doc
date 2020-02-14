@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: c-block-comment-header-doc
+# key: chd
+# --
+
+/**********************************************************************
+ *** ${1:$(make-string (- 31 (floor (string-width yas-text) 2)) ?\ )}$1${1:$(make-string (- 31 (ceiling (string-width yas-text) 2)) ?\ )} ***
+ **********************************************************************/
+
+$0

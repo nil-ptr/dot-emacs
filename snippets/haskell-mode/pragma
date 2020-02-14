@@ -1,0 +1,19 @@
+# -*- mode: snippet -*-
+# contributor: Nils Gustafsson
+# name: pragma
+# key: pragma
+# --
+{-# ${1:$$(yas-choose-value '("LANGUAGE"
+                              "OPTIONS_GHC"
+                              "INLINE"
+                              "INLINABLE"
+                              "NOINLINE"
+                              "SPECIALIZE"
+                              "RULES"
+                              "UNPACK"
+                              "WARNING"
+                              "DEPRECATED"
+                              "LINE"
+                              "INCLUDE"
+                              "SOURCE"
+                              ))} $2 #-} $0

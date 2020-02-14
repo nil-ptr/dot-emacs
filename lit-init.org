@@ -2721,14 +2721,17 @@
 
     #+NAME: lit-emacs-init-yatemplate-setup
     #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (eval-and-compile (defun what-happening()
+          (message "this ran")
+          (yatemplate-fill-alist)))
+
       (use-package yatemplate
-        :defer t
+        :defer 15
         :ensure t
         :commands yatemplate-fill-alist
         :init
-        (eval-after-load 'auto-insert
-          #'yatemplate-fill-alist)
-        :hook (find-file  . auto-insert))
+        (eval-after-load 'autoinsert
+          #'yatemplate-fill-alist))
     #+END_SRC
 
     The above setup runs on an ~after-init-hook~, because the behaviour

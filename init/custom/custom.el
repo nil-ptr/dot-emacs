@@ -112,7 +112,7 @@ items to fire, even though they're entirely uncalled for.")
    (quote allow-unsigned))
  '(package-selected-packages
    (quote
-    (company-stan eldoc-stan flycheck-stan org-picklink hlint-refactor delight auto-yasnippet avy avy-zap buffer-move column-enforce-mode company company-c-headers company-cabal company-ghci company-glsl company-math company-quickhelp diminish encourage-mode flycheck flycheck-haskell flycheck-pos-tip flyspell haskell-mode helm helm-ag helm-c-yasnippet helm-company helm-flycheck helm-flyspell helm-org-rifle helm-projectile highlight-indentation htmlize magit markdown-mode matlab-mode org-bullets org-plus-contrib pandoc-mode pdf-tools pos-tip powerline projectile rainbow-delimiters smartparens use-package whitespace-cleanup-mode yasnippet yatemplate)))
+    (multiple-cursors company-stan eldoc-stan flycheck-stan org-picklink hlint-refactor delight auto-yasnippet avy avy-zap buffer-move column-enforce-mode company company-c-headers company-cabal company-ghci company-glsl company-math company-quickhelp diminish encourage-mode flycheck flycheck-haskell flycheck-pos-tip flyspell haskell-mode helm helm-ag helm-c-yasnippet helm-company helm-flycheck helm-flyspell helm-org-rifle helm-projectile highlight-indentation htmlize magit markdown-mode matlab-mode org-bullets org-plus-contrib pandoc-mode pdf-tools pos-tip powerline projectile rainbow-delimiters smartparens use-package whitespace-cleanup-mode yasnippet yatemplate)))
  '(pcomplete-command-completion-function
    (lambda nil
      (progn

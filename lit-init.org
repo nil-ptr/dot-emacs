@@ -1441,6 +1441,50 @@
      #+END_SRC
 
 
+*** =multiple-cursors=
+
+    Having had a taste of multiple cursors in vs code, I now feel I
+    need it here too. Luckily there's a package for that.
+
+    #+NAME: lit-emacs-init-multiple-cursor-setup
+    #+BEGIN_SRC emacs-lisp +n -r -l ";(%s)"
+      (use-package multiple-cursors
+        :defer t
+        :ensure t
+        :bind (:map global-map
+                    ;; Short Keybindings
+                    ("C->" . mc/mark-next-like-this)
+                    ("C-<" . mc/mark-previous-like-this)
+                    ("C-M->" . mc/mark-next-like-this-symbol)
+                    ("C-M-<" . mc/mark-previous-like-this-symbol)
+                    ("M->" . mc/mark-next-like-this-word)
+                    ("M-<" . mc/mark-previous-like-this-word)
+                    ;; Longer Bidings
+                    ;; Lines
+                    ("C-H-l l" . mc/edit-lines)
+                    ("C-H-l C-a" . mc/edit-beginnings-of-lines)
+                    ("C-H-l C-e" . mc/edit-ends-of-lines)
+                    ;; Next/Previous like selection
+                    ("C-H-n" . mc/mark-next-like-this)
+                    ("C-H-M-n" . mc/skip-to-next-like-this)
+                    ("C-H-p" . mc/mark-previous-like-this)
+                    ("C-H-M-p" . mc/skip-to-previous-like-this)
+                    ;; Next/Previous word/symbol
+                    ("H-M-n" . mc/mark-next-like-this-symbol)
+                    ("H-M-p" . mc/mark-previous-like-this-symbol)
+                    ("H-M-f" . mc/mark-next-like-this-word)
+                    ("H-M-b" . mc/mark-previous-like-this-word)
+                    ;; All like this
+                    ("C-H-a a" . mc/mark-all-dwim)
+                    ("C-H-a g" . mc/mark-all-like-this)
+                    ("C-H-a f" . mc/mark-all-like-this-in-defun)
+                    ("H-M-w g" . mc/mark-all-words-like-this)
+                    ("H-M-w f" . mc/mark-all-words-like-this-in-defun)
+                    ("H-M-s g" . mc/mark-all-symbols-like-this)
+                    ("H-M-s f" . mc/mark-all-symbols-like-this-in-defun)))
+    #+END_SRC
+
+
 *** =pcomplete=
 
     Set up =pcomplete= as a =completion-at-point= function. =org=
@@ -1608,7 +1652,6 @@
 
     Note that ~flyspell-mode~ for /programming/ mode is a [[(flyspellProgMode)][different]]
     mode than the /text/ oriented one.
-
 
 
 
@@ -2264,8 +2307,8 @@
                ("H-n F" . org-narrow-to-defun)
                ("H-n e" . org-narrow-to-element)
                ("H-n b" . org-narrow-to-block)
-               ("H-C-p" . org-previous-visible-heading)
-               ("H-C-n" . org-next-visible-heading)
+               ("H-M-<up>" . org-previous-visible-heading)
+               ("H-M-<down>" . org-next-visible-heading)
                ;; Clocking
                :map global-map
                ("H-o c l" . org-clock-in-last)
